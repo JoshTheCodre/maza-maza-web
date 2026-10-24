@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+/* Maza-Maza tokens. Light values first; dark values follow the viewer's system setting. */
+:root {
+  --hero: #063a28;
+  --hero-2: #0b5a3d;
+  --hero-line: rgb(240 251 244 / 0.22);
+  --on-hero: #f0fbf4;
+  --on-hero-muted: #b3dac6;
+  --brand: #0a7f4e;
+  --brand-strong: #065f3a;
+  --brand-soft: #e1f3e8;
+  --on-brand: #ffffff;
+  --danfo: #ffc72c;
+  --danfo-soft: #fff4d2;
+  --on-danfo: #1c1803;
+  --on-danfo-line: rgb(28 24 3 / 0.32);
+  --bg: #f3f6f2;
+  --surface: #ffffff;
+  --surface-2: #edf2ee;
+  --ink: #10201a;
+  --muted: #58695f;
+  --line: #d9e2db;
+  --accept: #0a7046;
+  --accept-bg: #dcf2e5;
+  --counter: #835500;
+  --counter-bg: #ffedbd;
+  --lost: #8f3a2e;
+  --lost-bg: #fbe5e1;
+  --danger: #c0352b;
+  --scrim: rgb(4 14 10 / 0.52);
+  --focus: #0a7f4e;
+  --map-land: #e4ebe2;
+  --map-park: #d1e5cc;
+  --map-water: #b6d5e0;
+  --map-road: #ffffff;
+  --map-major: #f3cc5c;
+  --map-label: #77887e;
+  --map-wlabel: #55889a;
+  --shadow-card-value: 0 1px 2px rgb(8 40 26 / 0.06), 0 18px 36px -20px rgb(8 40 26 / 0.45);
+  --shadow-soft-value: 0 1px 3px rgb(8 40 26 / 0.16);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --hero: #04261a;
+    --hero-2: #0a422d;
+    --hero-line: rgb(240 251 244 / 0.16);
+    --on-hero: #eefbf3;
+    --on-hero-muted: #97c6ad;
+    --brand: #33c784;
+    --brand-strong: #5cdc9e;
+    --brand-soft: #11301f;
+    --on-brand: #04170d;
+    --danfo-soft: #2e2610;
+    --bg: #0b130f;
+    --surface: #121d18;
+    --surface-2: #192720;
+    --ink: #e5efe9;
+    --muted: #98aea1;
+    --line: #26392f;
+    --accept: #63e0a5;
+    --accept-bg: #113524;
+    --counter: #ffd467;
+    --counter-bg: #3a2e0e;
+    --lost: #ff9f92;
+    --lost-bg: #3a1c17;
+    --danger: #ff8a7a;
+    --scrim: rgb(0 0 0 / 0.6);
+    --focus: #ffc72c;
+    --map-land: #16211b;
+    --map-park: #1a2e21;
+    --map-water: #0e2a33;
+    --map-road: #26372e;
+    --map-major: #6e5b1d;
+    --map-label: #7e9387;
+    --map-wlabel: #4f8596;
+    --shadow-card-value: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 36px -20px rgb(0 0 0 / 0.8);
+    --shadow-soft-value: 0 1px 3px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-hero: var(--hero);
+  --color-hero-2: var(--hero-2);
+  --color-hero-line: var(--hero-line);
+  --color-on-hero: var(--on-hero);
+  --color-on-hero-muted: var(--on-hero-muted);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-danfo: var(--danfo);
+  --color-danfo-soft: var(--danfo-soft);
+  --color-on-danfo: var(--on-danfo);
+  --color-on-danfo-line: var(--on-danfo-line);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accept: var(--accept);
+  --color-accept-bg: var(--accept-bg);
+  --color-counter: var(--counter);
+  --color-counter-bg: var(--counter-bg);
+  --color-lost: var(--lost);
+  --color-lost-bg: var(--lost-bg);
+  --color-danger: var(--danger);
+  --color-scrim: var(--scrim);
+
+  --font-display: var(--font-unbounded), "Arial Black", system-ui, sans-serif;
+  --font-sans: var(--font-figtree), "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-martian), ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  --shadow-card: var(--shadow-card-value);
+  --shadow-soft: var(--shadow-soft-value);
+
+  --animate-enter: enter 0.35s ease-out;
+  --animate-rise: rise 0.25s ease-out;
+  --animate-fade: fade 0.2s ease-out;
+  --animate-drop: drop 0.25s ease-out;
+  --animate-blink: blink 1.2s ease-in-out infinite;
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(10px); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(40px); }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+  }
+  @keyframes drop {
+    from { opacity: 0; transform: translateY(-12px); }
+  }
+  @keyframes blink {
+    50% { opacity: 0.25; }
+  }
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.on-hero {
+  --focus: var(--danfo);
+}
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.balance {
+  text-wrap: balance;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fallback street map, drawn when no Google Maps key is set */
+.m-land { fill: var(--map-land); }
+.m-park { fill: var(--map-park); }
+.m-water { fill: var(--map-water); }
+.m-road { fill: none; stroke: var(--map-road); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.m-major { fill: none; stroke: var(--map-major); stroke-width: 3.6; stroke-linecap: round; stroke-linejoin: round; }
+.m-label { font-family: var(--font-mono); font-size: 5.6px; font-weight: 600; letter-spacing: 0.08em; fill: var(--map-label); }
+.m-wlabel { font-family: var(--font-sans); font-size: 7px; font-style: italic; fill: var(--map-wlabel); }
+.m-route-bg { fill: none; stroke: var(--surface); stroke-width: 6.5; stroke-linecap: round; }
+.m-route { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
+.m-pin-a { fill: var(--brand); stroke: var(--surface); stroke-width: 2; }
+.m-pin-b { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.m-veh { fill: var(--danfo); stroke: var(--on-danfo); stroke-width: 1.6; }
+.m-veh-dot { fill: var(--on-danfo); }
+.m-other { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4; }
+.m-pulse { fill: var(--brand); transform-box: fill-box; transform-origin: center; animation: mpulse 1.8s ease-out infinite; }
+@keyframes mpulse {
+  from { transform: scale(1); opacity: 0.5; }
+  to { transform: scale(4.5); opacity: 0; }
+}
+
+.barcode {
+  background: repeating-linear-gradient(90deg, var(--on-danfo) 0 3px, transparent 3px 5px, var(--on-danfo) 5px 6px, transparent 6px 9px, var(--on-danfo) 9px 11px, transparent 11px 12px, var(--on-danfo) 12px 13px, transparent 13px 16px);
+}
+.perforation {
+  position: relative;
+  border-top: 2px dashed var(--on-danfo-line);
+}
+.perforation::before,
+.perforation::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--notch, var(--bg));
+}
+.perforation::before { left: -11px; }
+.perforation::after { right: -11px; }
+
+.radar {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+}
+.radar::before {
+  content: "";
+  position: absolute;
+  inset: 19px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--brand);
+  animation: ring 1.8s ease-out infinite;
+}
+@keyframes ring {
+  from { transform: scale(0.5); opacity: 1; }
+  to { transform: scale(1.4); opacity: 0; }
+}
+
+/* The notification bell swings once when something new arrives */
+.bell-swing {
+  transform-origin: 50% 3px;
+  animation: bell-swing 0.9s ease-in-out;
+}
+@keyframes bell-swing {
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(2deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
