@@ -20,15 +20,6 @@ function StrokeIcon({ size, strokeWidth, children }: Required<IconProps> & { chi
   );
 }
 
-export function LogoMark() {
-  return (
-    <svg className="logo-mark" viewBox="0 0 40 40" aria-hidden="true">
-      <rect className="lm-bg" width="40" height="40" rx="11" />
-      <path className="lm-fg" d="M10.5 12l8 8-8 8M20.5 12l8 8-8 8" />
-    </svg>
-  );
-}
-
 export function CheckIcon({ size = 18, strokeWidth = 2.6 }: IconProps) {
   return (
     <StrokeIcon size={size} strokeWidth={strokeWidth}>

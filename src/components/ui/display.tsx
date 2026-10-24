@@ -110,20 +110,13 @@ export function SectionTitle({ children, extra }: { children: ReactNode; extra?:
   );
 }
 
-export function Logo({ dark = true }: { dark?: boolean }) {
+/** The Maza-Maza logo is the wordmark alone, with no symbol. The hyphen carries the accent colour. */
+export function Logo({ dark = true, size = "md" }: { dark?: boolean; size?: "md" | "lg" }) {
   return (
-    <span className={`inline-flex items-center gap-2.5 font-display text-[1.08rem] font-bold tracking-tight ${dark ? "text-on-hero" : "text-ink"}`}>
-      <LogoMark />
-      maza-maza
+    <span
+      className={`inline-block font-display leading-none font-extrabold tracking-[-0.04em] whitespace-nowrap ${size === "lg" ? "text-[2rem]" : "text-[1.3rem]"} ${dark ? "text-on-hero" : "text-ink"}`}
+    >
+      maza<span className={dark ? "text-danfo" : "text-brand"}>-</span>maza
     </span>
-  );
-}
-
-export function LogoMark({ size = 32 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 40 40" aria-hidden className="flex-none">
-      <rect width="40" height="40" rx="11" fill="var(--danfo)" />
-      <path d="M10.5 12l8 8-8 8M20.5 12l8 8-8 8" fill="none" stroke="var(--hero)" strokeWidth="4.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

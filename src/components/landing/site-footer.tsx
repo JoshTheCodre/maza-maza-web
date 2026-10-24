@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { LogoMark } from "./icons";
 
 const COLUMNS = [
   {
@@ -32,8 +31,7 @@ export function SiteFooter() {
       <div className="wrap foot-top">
         <div className="foot-brand">
           <a className="logo" href="#top" aria-label="Maza-Maza home">
-            <LogoMark />
-            maza-maza
+            maza<span className="logo-dash">-</span>maza
           </a>
           <p>Your price. Their yes.</p>
         </div>

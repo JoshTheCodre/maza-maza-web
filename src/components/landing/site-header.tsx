@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LogoMark } from "./icons";
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -13,8 +12,7 @@ export function SiteHeader() {
       <div className="wrap">
         <nav className="nav" aria-label="Main">
           <a className="logo" href="#top" aria-label="Maza-Maza home">
-            <LogoMark />
-            maza-maza
+            maza<span className="logo-dash">-</span>maza
           </a>
           <div className="nav-links">
             <Link href="/ride">Ride</Link>

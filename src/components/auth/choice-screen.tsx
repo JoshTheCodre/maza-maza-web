@@ -4,7 +4,7 @@ import { ChevronRight, LoaderCircle, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { LogoMark } from "@/components/ui/display";
+import { Logo } from "@/components/ui/display";
 import { takeNext } from "@/lib/next-path";
 import { useStore } from "@/lib/store";
 import { DealIllustration, GoogleIcon } from "./auth-parts";
@@ -87,7 +87,7 @@ export function ChoiceScreen({ intent }: { intent: "login" | "signup" }) {
     <div className="flex min-h-dvh flex-col bg-surface lg:grid lg:grid-cols-2">
       <section className="on-hero relative flex flex-none flex-col items-center justify-end gap-5 bg-brand px-6 pt-[calc(env(safe-area-inset-top)+64px)] pb-8 text-on-brand lg:justify-center lg:bg-hero lg:text-on-hero">
         <Link href="/" aria-label="Maza-Maza home" className="absolute top-[calc(env(safe-area-inset-top)+16px)] left-5">
-          <LogoMark size={34} />
+          <Logo />
         </Link>
         <DealIllustration />
         <p className="text-center text-[1.15rem] font-semibold lg:text-[1.3rem]">{copy.blurb}</p>

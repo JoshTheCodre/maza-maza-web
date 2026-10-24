@@ -2,7 +2,7 @@
 
 import { WifiOff } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
-import { LogoMark } from "@/components/ui/display";
+import { Logo } from "@/components/ui/display";
 import { startSimulation } from "@/lib/sim";
 import { STORAGE_KEY, useStore } from "@/lib/store";
 
@@ -29,7 +29,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return (
       <div className="grid h-dvh place-items-center bg-bg" aria-busy="true" aria-label="Loading Maza-Maza">
         <span className="animate-blink">
-          <LogoMark size={44} />
+          <Logo dark={false} size="lg" />
         </span>
       </div>
     );

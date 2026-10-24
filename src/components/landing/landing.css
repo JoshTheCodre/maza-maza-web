@@ -91,10 +91,9 @@ html:has(.landing){scroll-behavior:smooth}
 /* Header */
 .landing .site-header{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--hero);color:var(--on-hero);--focus:var(--danfo)}
 .landing .nav{display:flex;align-items:center;gap:20px;min-height:68px}
-.landing .logo{display:inline-flex;align-items:center;gap:10px;white-space:nowrap;text-decoration:none;font-family:var(--f-display);font-weight:700;font-size:1.12rem;letter-spacing:-.03em}
-.landing .logo-mark{width:34px;height:34px;flex:none}
-.landing .lm-bg{fill:var(--danfo)}
-.landing .lm-fg{fill:none;stroke:var(--hero);stroke-width:4.4;stroke-linecap:round;stroke-linejoin:round}
+/* The logo is the wordmark alone; the hyphen carries the accent colour */
+.landing .logo{display:inline-block;white-space:nowrap;text-decoration:none;font-family:var(--f-display);font-weight:800;font-size:1.4rem;line-height:1;letter-spacing:-.04em}
+.landing .logo-dash{color:var(--danfo)}
 .landing .nav-links{display:flex;gap:2px;margin-left:auto}
 .landing .nav-links a{padding:8px 14px;border-radius:999px;text-decoration:none;font-weight:600;font-size:.98rem;color:var(--on-hero-muted)}
 .landing .nav-links a:hover{color:var(--on-hero);background:var(--hero-2)}
