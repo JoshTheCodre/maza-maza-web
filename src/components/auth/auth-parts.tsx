@@ -18,6 +18,11 @@ export const writeSession = (key: string, value: string) => {
     sessionStorage.setItem(key, value);
   } catch {}
 };
+export const removeSession = (key: string) => {
+  try {
+    sessionStorage.removeItem(key);
+  } catch {}
+};
 
 /** Plain white step screen: back arrow, big title, content, and a button pinned to the bottom. */
 export function AuthStep({ title, back, children, footer }: { title: string; back?: string; children: ReactNode; footer: ReactNode }) {
@@ -42,13 +47,28 @@ export function AuthStep({ title, back, children, footer }: { title: string; bac
   );
 }
 
-export function PillButton({ children, disabled, onClick, type = "button" }: { children: ReactNode; disabled?: boolean; onClick?: () => void; type?: "button" | "submit" }) {
+/** The big button at the bottom of sign-up and welcome screens: chartreuse, or soft grey for the second choice. */
+export function PillButton({
+  children,
+  disabled,
+  onClick,
+  type = "button",
+  tone = "accent",
+}: {
+  children: ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  tone?: "accent" | "soft";
+}) {
   return (
     <button
       type={type}
       disabled={disabled}
       onClick={onClick}
-      className="min-h-14 w-full rounded-full bg-brand text-[1.05rem] font-bold text-on-brand transition-opacity enabled:hover:bg-brand-strong disabled:opacity-40"
+      className={`min-h-14 w-full rounded-full text-[1.05rem] font-bold transition disabled:opacity-40 ${
+        tone === "accent" ? "bg-danfo text-on-danfo enabled:hover:brightness-95" : "bg-surface-2 text-ink enabled:hover:bg-line"
+      }`}
     >
       {children}
     </button>

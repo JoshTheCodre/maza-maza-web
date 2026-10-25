@@ -74,6 +74,8 @@ export interface CustomerState {
   phone: string;
   /** How they log in. Missing on data saved before Google sign-in existed, which was always phone. */
   authMethod?: AuthMethod;
+  /** When they passed the selfie face check, if they have. */
+  faceVerifiedAt?: number;
   draft: Draft;
   savedPlaces: SavedPlace[];
   contacts: EmergencyContact[];
@@ -111,6 +113,7 @@ interface Actions {
   // session
   signIn: (via: { method: "phone"; phone: string } | { method: "google" }) => void;
   addPhone: (phone: string) => void;
+  markFaceVerified: () => void;
   signOut: () => void;
   setProfile: (p: { name: string; email?: string }) => void;
   setLocationAsked: () => void;
@@ -320,6 +323,7 @@ export const useStore = create<Store>()(
             customer: { ...s.customer, authMethod: via.method, phone: via.method === "phone" ? via.phone : s.customer.phone },
           })),
         addPhone: (phone) => set((s) => ({ customer: { ...s.customer, phone } })),
+        markFaceVerified: () => set((s) => ({ customer: { ...s.customer, faceVerifiedAt: Date.now() } })),
         signOut: () => set((s) => ({ signedIn: false, driver: { ...s.driver, online: false } })),
         setProfile: ({ name, email }) =>
           set((s) => ({ customer: { ...s.customer, email: email ?? s.customer.email, profile: { ...s.customer.profile, name, short: shortName(name) } } })),

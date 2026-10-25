@@ -1,7 +1,10 @@
 "use client";
 
-import { Lock, Share2, ShieldCheck, Siren, X } from "lucide-react";
+import { CircleCheck, Lock, ScanFace, Share2, ShieldCheck, Siren, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
+import { writeSession } from "@/components/auth/auth-parts";
+import { VERIFY_RETURN_KEY } from "@/components/auth/onboarding";
 import { Page, PageHeader } from "@/components/app/layout-parts";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/controls";
@@ -23,6 +26,20 @@ export default function SafetyPage() {
   return (
     <Page>
       <PageHeader title="Safety" back="/account" />
+      <section className="flex items-center gap-3 rounded-2xl border-[1.5px] border-line bg-surface p-3.5">
+        <span className={`grid size-11 flex-none place-items-center rounded-full ${s.customer.faceVerifiedAt ? "bg-accept-bg text-accept" : "bg-danfo text-on-danfo"}`}>
+          {s.customer.faceVerifiedAt ? <CircleCheck size={22} aria-hidden /> : <ScanFace size={22} aria-hidden />}
+        </span>
+        <span className="min-w-0 flex-1">
+          <b className="block">Face check</b>
+          <small className="text-[0.84rem] text-muted">{s.customer.faceVerifiedAt ? "You're verified." : "A quick selfie so drivers know it's really you."}</small>
+        </span>
+        {!s.customer.faceVerifiedAt && (
+          <Link href="/welcome/verify" onClick={() => writeSession(VERIFY_RETURN_KEY, "/account/safety")} className="inline-flex min-h-10 items-center rounded-full bg-ink px-4 text-[0.9rem] font-bold text-surface">
+            Verify
+          </Link>
+        )}
+      </section>
       <section className="grid gap-2">
         <h2 className="font-bold">Emergency contacts</h2>
         <p className="text-[0.86rem] text-muted">They get your live location when you share a trip or press SOS.</p>

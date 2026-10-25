@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthStep, PillButton } from "@/components/auth/auth-parts";
-import { takeNext } from "@/lib/next-path";
 import { useStore } from "@/lib/store";
 
 const input =
@@ -24,7 +23,7 @@ export default function NamePage() {
   const save = () => {
     if (!ok) return;
     s.setProfile({ name: `${first.trim()} ${last.trim()}`, email: email.trim() });
-    router.push(s.locationAsked ? takeNext() : "/welcome/location");
+    router.push("/welcome/role");
   };
 
   return (

@@ -4,7 +4,7 @@ import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { nearestPlace } from "@/lib/data/places";
-import { takeNext } from "@/lib/next-path";
+import { nextWelcomeStep } from "@/components/auth/onboarding";
 import { useStore } from "@/lib/store";
 
 /** Asks before the browser does, so people know why we want their location. */
@@ -15,7 +15,7 @@ export default function LocationPermissionPage() {
 
   const done = () => {
     s.setLocationAsked();
-    router.push(takeNext());
+    router.push(nextWelcomeStep("location"));
   };
 
   const allow = () => {
@@ -32,7 +32,7 @@ export default function LocationPermissionPage() {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col justify-end bg-brand px-4 pt-[env(safe-area-inset-top)] pb-[calc(16px+env(safe-area-inset-bottom))] lg:items-center lg:justify-center">
+    <div className="flex min-h-dvh flex-col justify-end bg-hero px-4 pt-[env(safe-area-inset-top)] pb-[calc(16px+env(safe-area-inset-bottom))] lg:items-center lg:justify-center">
       <div className="w-full max-w-md animate-rise rounded-[28px] bg-surface px-6 pt-7 pb-4 text-center shadow-card">
         <MapPin size={30} className="mx-auto text-brand" aria-hidden />
         <h1 className="mt-4 text-[1.2rem] leading-snug font-normal">
