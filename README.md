@@ -28,7 +28,7 @@ code works until SMS/WhatsApp is connected), sets their name, and lands on the r
 | Area | Routes |
 | --- | --- |
 | Landing | `/` |
-| Sign up | `/signup` (phone or Google) → `/signup/phone` → `/signup/verify` → `/welcome` → `/welcome/location` |
+| Sign up | `/signup` (phone or Google) → `/signup/phone` → `/signup/verify` → `/welcome` (name) → `/welcome/role` (passenger or driver) → `/welcome/verify` (+ `/camera` selfie) → `/welcome/location` → `/welcome/notifications` → `/welcome/pay` (passengers) · drivers then go to `/driver/signup` |
 | Log in | `/login` (phone or Google) → `/login/phone` → `/login/verify` · Google users add a number at `/add-phone` |
 | Rider | `/ride` · `/ride/search` · `/ride/offer` · `/ride/request/[id]` · `/ride/trip/[id]` (+ `/chat`) · `/activity` (+ `/[id]`) · `/account` (+ `/profile`, `/places`, `/safety`) · `/notifications` · `/help` |
 | Driver | `/driver/signup` · `/driver` offers · `/driver/trip/[id]` (+ `/chat`) · `/driver/ticket` · `/driver/wallet` · `/driver/earnings` · `/driver/account` (+ `/payout`, `/profile`) · `/driver/notifications` · `/driver/help` |
