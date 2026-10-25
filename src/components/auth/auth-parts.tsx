@@ -93,34 +93,34 @@ export function DealIllustration() {
   return (
     <svg viewBox="0 0 300 190" className="h-auto w-full max-w-[300px]" aria-hidden>
       {[
-        [30, 30, "#ffc72c", 0],
+        [30, 30, "#d5f02a", 0],
         [262, 22, "#ffffff", 20],
-        [250, 120, "#ffc72c", -30],
+        [250, 120, "#d5f02a", -30],
         [40, 132, "#ffffff", 45],
-        [150, 12, "#5cdc9e", 10],
-        [280, 70, "#5cdc9e", 60],
+        [150, 12, "#8e939b", 10],
+        [280, 70, "#8e939b", 60],
       ].map(([x, y, c, r], i) => (
         <rect key={i} x={x as number} y={y as number} width="10" height="4" rx="2" fill={c as string} transform={`rotate(${r} ${x} ${y})`} />
       ))}
-      <ellipse cx="150" cy="172" rx="108" ry="8" fill="#000000" opacity="0.18" />
-      <path d="M52 150v-18c0-9 6-15 15-16l46-5 22-24c4-4 9-6 15-6h56c7 0 13 2 17 7l22 23 33 5c10 2 16 9 16 19v15c0 3-3 6-6 6H58c-3 0-6-3-6-6z" fill="#ffc72c" />
-      <path d="M121 110l18-20c3-2 6-4 9-4h23v24zM179 86h24c5 0 9 2 12 6l17 18h-53z" fill="#063a28" opacity="0.85" />
-      <path d="M170 113v34" stroke="#c99a12" strokeWidth="2.5" strokeLinecap="round" />
-      <circle cx="96" cy="156" r="18" fill="#10201a" />
-      <circle cx="96" cy="156" r="7" fill="#e4ebe2" />
-      <circle cx="232" cy="156" r="18" fill="#10201a" />
-      <circle cx="232" cy="156" r="7" fill="#e4ebe2" />
+      <ellipse cx="150" cy="172" rx="108" ry="8" fill="#ffffff" opacity="0.08" />
+      <path d="M52 150v-18c0-9 6-15 15-16l46-5 22-24c4-4 9-6 15-6h56c7 0 13 2 17 7l22 23 33 5c10 2 16 9 16 19v15c0 3-3 6-6 6H58c-3 0-6-3-6-6z" fill="#d5f02a" />
+      <path d="M121 110l18-20c3-2 6-4 9-4h23v24zM179 86h24c5 0 9 2 12 6l17 18h-53z" fill="#1f201c" />
+      <path d="M170 113v34" stroke="#9fb31a" strokeWidth="2.5" strokeLinecap="round" />
+      <circle cx="96" cy="156" r="18" fill="#3a3c40" />
+      <circle cx="96" cy="156" r="7" fill="#e9e9e2" />
+      <circle cx="232" cy="156" r="18" fill="#3a3c40" />
+      <circle cx="232" cy="156" r="7" fill="#e9e9e2" />
       <g>
         <rect x="18" y="44" width="108" height="40" rx="14" fill="#ffffff" />
         <path d="M44 84l-6 12 18-12z" fill="#ffffff" />
-        <text x="72" y="70" textAnchor="middle" fontFamily="var(--font-martian), monospace" fontWeight="700" fontSize="15" fill="#10201a">
+        <text x="72" y="70" textAnchor="middle" fontFamily="var(--font-martian), monospace" fontWeight="700" fontSize="15" fill="#0f100d">
           ₦2,500?
         </text>
       </g>
       <g>
-        <rect x="178" y="30" width="104" height="40" rx="14" fill="#0a7f4e" />
-        <path d="M246 70l8 12-18-12z" fill="#0a7f4e" />
-        <text x="230" y="56" textAnchor="middle" fontFamily="var(--font-figtree), sans-serif" fontWeight="800" fontSize="15" fill="#ffffff">
+        <rect x="178" y="30" width="104" height="40" rx="14" fill="#d5f02a" />
+        <path d="M246 70l8 12-18-12z" fill="#d5f02a" />
+        <text x="230" y="56" textAnchor="middle" fontFamily="var(--font-figtree), sans-serif" fontWeight="800" fontSize="15" fill="#12140a">
           Deal ✓
         </text>
       </g>

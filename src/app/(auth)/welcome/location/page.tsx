@@ -80,7 +80,7 @@ function PickupDisc() {
         <circle cx="34" cy="50" r="3" fill="var(--danfo)" />
         <circle cx="92" cy="40" r="3" fill="var(--brand)" />
         <path d="M60 34c-9 0-16 7-16 16 0 12 16 26 16 26s16-14 16-26c0-9-7-16-16-16z" fill="var(--brand)" />
-        <circle cx="60" cy="50" r="6" fill="#ffffff" />
+        <circle cx="60" cy="50" r="6" fill="var(--surface)" />
         <ellipse cx="60" cy="80" rx="9" ry="3.5" fill="none" stroke="var(--brand)" strokeWidth="2" />
       </g>
       <circle cx="60" cy="60" r="56" fill="none" stroke="var(--brand)" strokeWidth="4" />

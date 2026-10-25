@@ -33,14 +33,14 @@ export function Services() {
               <svg viewBox="0 0 340 170" aria-hidden="true">
                 <ellipse className="i-shadow" cx="176" cy="160" rx="132" ry="6" />
                 <rect className="i-box" x="44" y="30" width="80" height="64" rx="8" />
-                <path className="i-box-mark" d="M68 50l11 12-11 12M88 50l11 12-11 12" />
+                <path className="i-box-mark" d="M84 30v64M70 30v12M98 30v12" />
                 <path className="i-pipe" d="M112 122h46" />
                 <circle className="i-tyre" cx="92" cy="130" r="28" />
                 <circle className="i-hub" cx="92" cy="130" r="11" />
                 <circle className="i-tyre" cx="262" cy="130" r="28" />
                 <circle className="i-hub" cx="262" cy="130" r="11" />
                 <path className="i-frame" d="M92 130L132 100H202L242 76M202 100l-14 30h-58" />
-                <path className="i-body" d="M128 104c4-16 14-24 30-24h46c12 0 20 6 22 16l2 8z" />
+                <path className="i-tank" d="M128 104c4-16 14-24 30-24h46c12 0 20 6 22 16l2 8z" />
                 <rect className="i-seat" x="108" y="88" width="62" height="12" rx="6" />
                 <path className="i-frame" d="M262 130L236 60M236 60l-13-4M236 60h18" />
                 <circle className="i-light" cx="249" cy="80" r="7" />

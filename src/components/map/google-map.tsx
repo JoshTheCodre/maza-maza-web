@@ -20,7 +20,7 @@ function FitAndRoute({ pickup, drop }: Pick<MapProps, "pickup" | "drop">) {
       { lat: drop.lat, lng: drop.lng },
     ];
     // The real route comes from the Routes API; until then a straight line marks the trip.
-    const line = new google.maps.Polyline({ path, strokeColor: "#10201a", strokeOpacity: 0.85, strokeWeight: 4, map });
+    const line = new google.maps.Polyline({ path, strokeColor: "#0f100d", strokeOpacity: 0.85, strokeWeight: 4, map });
     const bounds = new google.maps.LatLngBounds();
     path.forEach((p) => bounds.extend(p));
     map.fitBounds(bounds, 64);
@@ -59,17 +59,17 @@ export function GoogleStreetMap({ pickup, drop, vehicle, others }: MapProps) {
         ))}
         {pickup && (
           <AdvancedMarker position={{ lat: pickup.lat, lng: pickup.lng }} title="Pickup">
-            <div style={pin("#0a7f4e", 16)} />
+            <div style={pin("#0f100d", 16)} />
           </AdvancedMarker>
         )}
         {drop && (
           <AdvancedMarker position={{ lat: drop.lat, lng: drop.lng }} title="Drop-off">
-            <div style={pin("#10201a", 14, true)} />
+            <div style={{ ...pin("#d5f02a", 14, true), border: "2px solid #0f100d" }} />
           </AdvancedMarker>
         )}
         {vehicle && (
           <AdvancedMarker position={{ lat: vehicle.lat, lng: vehicle.lng }} title="Driver">
-            <div style={{ ...pin("#ffc72c", 20), border: "2px solid #1c1803" }} />
+            <div style={{ ...pin("#0f100d", 20), border: "3px solid #d5f02a" }} />
           </AdvancedMarker>
         )}
       </Map>

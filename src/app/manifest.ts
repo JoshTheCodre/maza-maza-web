@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Rides and deliveries at the price you agree.",
     start_url: "/ride",
     display: "standalone",
-    background_color: "#f3f6f2",
-    theme_color: "#063a28",
+    background_color: "#f5f5f0",
+    theme_color: "#0f100d",
     icons: [{ src: "/icons/maza-maza.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }],
   };
 }

@@ -85,7 +85,7 @@ export function ChoiceScreen({ intent }: { intent: "login" | "signup" }) {
 
   return (
     <div className="flex min-h-dvh flex-col bg-surface lg:grid lg:grid-cols-2">
-      <section className="on-hero relative flex flex-none flex-col items-center justify-end gap-5 bg-brand px-6 pt-[calc(env(safe-area-inset-top)+64px)] pb-8 text-on-brand lg:justify-center lg:bg-hero lg:text-on-hero">
+      <section className="on-hero relative flex flex-none flex-col items-center justify-end gap-5 bg-hero px-6 pt-[calc(env(safe-area-inset-top)+64px)] pb-8 text-on-hero lg:justify-center">
         <Link href="/" aria-label="Maza-Maza home" className="absolute top-[calc(env(safe-area-inset-top)+16px)] left-5">
           <Logo />
         </Link>

@@ -1,36 +1,40 @@
 /* Maza-Maza landing page. Every rule is scoped under .landing (the page's outer element) so nothing leaks into the app.
    Keyframes are global by nature, so they carry a landing- prefix. */
-/* Layout: a city street. A deep-green hero with the booking card and a little car on the road; then short, airy
-   sections that each say one thing next to one illustration. */
+/* Layout: a city street. A black hero with the booking card and a little car on the road; then short, airy
+   sections that each say one thing next to one illustration. Palette: black, off-white and one chartreuse accent
+   ("danfo" is the accent's historic name), with gunmetal for the phone and quieter text. */
 .landing{
-  --hero:#063A28;
-  --hero-2:#0B5A3D;
-  --hero-line:rgba(240,251,244,.22);
-  --on-hero:#F0FBF4;
-  --on-hero-muted:#B3DAC6;
-  --road:#13221B;
-  --brand:#0A7F4E;
-  --brand-strong:#065F3A;
-  --brand-soft:#E1F3E8;
+  --hero:#0F100D;
+  --hero-2:#1F201C;
+  --hero-line:rgba(255,255,255,.16);
+  --on-hero:#F6F6F0;
+  --on-hero-muted:#A8AAA1;
+  --glow:rgba(213,240,42,.16);
+  --road:#1F201C;
+  --brand:#0F100D;
+  --brand-strong:#2C2D28;
+  --brand-soft:#F1F7D0;
   --on-brand:#FFFFFF;
-  --danfo:#FFC72C;
-  --on-danfo:#1C1803;
-  --on-danfo-line:rgba(28,24,3,.34);
-  --bg:#F3F6F2;
+  --danfo:#D5F02A;
+  --on-danfo:#12140A;
+  --on-danfo-line:rgba(18,20,10,.32);
+  --bg:#F5F5F0;
   --surface:#FFFFFF;
-  --surface-2:#E8EEE9;
-  --ink:#10201A;
-  --muted:#55665D;
-  --line:#D4DED7;
-  --tyre:#14211B;
-  --accept:#0A7046;
-  --accept-bg:#DCF2E5;
-  --cut:#D2604F;
-  --device:#0D1512;
-  --focus:#0A7F4E;
-  --shadow:0 1px 2px rgba(8,40,26,.06), 0 22px 44px -22px rgba(8,40,26,.4);
-  --shadow-sm:0 1px 3px rgba(8,40,26,.14);
-  --shadow-ticket:0 26px 40px -22px rgba(0,0,0,.5);
+  --surface-2:#EFEFE9;
+  --ink:#0F100D;
+  --muted:#62645D;
+  --line:#E0E0D8;
+  --tyre:#0F100D;
+  --glass:#1F201C;
+  --lamp:#FFFBE0;
+  --accept:#1D7A3E;
+  --accept-bg:#E3F3E1;
+  --cut:#E0624F;
+  --device:#2E3034;
+  --focus:#0F100D;
+  --shadow:0 1px 2px rgba(15,16,13,.06), 0 22px 44px -22px rgba(15,16,13,.38);
+  --shadow-sm:0 1px 3px rgba(15,16,13,.14);
+  --shadow-ticket:0 26px 40px -22px rgba(0,0,0,.45);
 
   --f-display:var(--font-unbounded),"Arial Black",system-ui,sans-serif;
   --f-body:var(--font-figtree),"Segoe UI",system-ui,-apple-system,sans-serif;
@@ -39,13 +43,13 @@
 }
 @media (prefers-color-scheme: dark){
   .landing{
-    --hero:#04261A; --hero-2:#0A422D; --hero-line:rgba(240,251,244,.16); --on-hero:#EEFBF3; --on-hero-muted:#97C6AD;
-    --road:#0A120E;
-    --brand:#33C784; --brand-strong:#5CDC9E; --brand-soft:#11301F; --on-brand:#04170D;
-    --bg:#0A120E; --surface:#111C17; --surface-2:#18261F; --ink:#E5EFE9; --muted:#98AEA1; --line:#25382E;
-    --tyre:#040806;
-    --accept:#63E0A5; --accept-bg:#113524;
-    --cut:#E5806F; --device:#000000; --focus:#FFC72C;
+    --hero:#000000; --hero-2:#1B1C18; --hero-line:rgba(255,255,255,.13); --on-hero:#F4F4EE; --on-hero-muted:#9FA197;
+    --glow:rgba(213,240,42,.12); --road:#1B1C18;
+    --brand:#D5F02A; --brand-strong:#E4F76E; --brand-soft:#262A12; --on-brand:#12140A;
+    --bg:#0B0B09; --surface:#151613; --surface-2:#1E1F1B; --ink:#F1F1EA; --muted:#A3A59B; --line:#2C2D27;
+    --tyre:#000000; --glass:#151613;
+    --accept:#6FDC96; --accept-bg:#14301D;
+    --cut:#E5806F; --device:#3A3C40; --focus:#D5F02A;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 22px 44px -22px rgba(0,0,0,.7);
     --shadow-sm:0 1px 3px rgba(0,0,0,.45);
     color-scheme:dark;
@@ -110,7 +114,7 @@ html:has(.landing){scroll-behavior:smooth}
 
 /* Hero */
 .landing .hero{position:relative;overflow:hidden;color:var(--on-hero);--focus:var(--danfo);
-  background:radial-gradient(900px 480px at 88% -8%, var(--hero-2), transparent 62%), var(--hero)}
+  background:radial-gradient(760px 420px at 92% -6%, var(--glow), transparent 64%), var(--hero)}
 .landing .hero-grid{display:grid;gap:44px;align-items:center;padding-block:clamp(48px,8vw,104px) clamp(88px,10vw,128px)}
 @media (min-width:1000px){ .landing .hero-grid{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:72px} }
 .landing .hero-copy{display:grid;gap:22px;min-width:0}
@@ -170,10 +174,11 @@ html:has(.landing){scroll-behavior:smooth}
 .landing .svc p{color:var(--muted)}
 .landing .svc-go{margin-top:8px;font-weight:700;color:var(--brand)}
 .landing .i-shadow{fill:var(--line)}
-.landing .i-body{fill:var(--brand)}
-.landing .i-glass{fill:var(--brand-soft)}
-.landing .i-trim{fill:none;stroke:var(--brand-strong);stroke-width:2.5;stroke-linecap:round}
-.landing .i-light{fill:var(--danfo)}
+.landing .i-body{fill:var(--danfo)}
+.landing .i-tank{fill:var(--ink)}
+.landing .i-glass{fill:var(--glass)}
+.landing .i-trim{fill:none;stroke:var(--on-danfo-line);stroke-width:2.5;stroke-linecap:round}
+.landing .i-light{fill:var(--lamp)}
 .landing .i-tail{fill:var(--cut)}
 .landing .i-tyre{fill:var(--tyre)}
 .landing .i-hub{fill:var(--surface-2)}

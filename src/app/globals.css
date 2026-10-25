@@ -1,80 +1,82 @@
 @import "tailwindcss";
 
-/* Maza-Maza tokens. Light values first; dark values follow the viewer's system setting. */
+/* Maza-Maza tokens. Light values first; dark values follow the viewer's system setting.
+   The palette is black, off-white and one chartreuse accent, with a gunmetal grey for quieter text.
+   "danfo" is the accent token's historic name; it now holds the chartreuse. */
 :root {
-  --hero: #063a28;
-  --hero-2: #0b5a3d;
-  --hero-line: rgb(240 251 244 / 0.22);
-  --on-hero: #f0fbf4;
-  --on-hero-muted: #b3dac6;
-  --brand: #0a7f4e;
-  --brand-strong: #065f3a;
-  --brand-soft: #e1f3e8;
+  --hero: #0f100d;
+  --hero-2: #1f201c;
+  --hero-line: rgb(255 255 255 / 0.15);
+  --on-hero: #f6f6f0;
+  --on-hero-muted: #a8aaa1;
+  --brand: #0f100d;
+  --brand-strong: #2c2d28;
+  --brand-soft: #f1f7d0;
   --on-brand: #ffffff;
-  --danfo: #ffc72c;
-  --danfo-soft: #fff4d2;
-  --on-danfo: #1c1803;
-  --on-danfo-line: rgb(28 24 3 / 0.32);
-  --bg: #f3f6f2;
+  --danfo: #d5f02a;
+  --danfo-soft: #f3f9d6;
+  --on-danfo: #12140a;
+  --on-danfo-line: rgb(18 20 10 / 0.32);
+  --bg: #f5f5f0;
   --surface: #ffffff;
-  --surface-2: #edf2ee;
-  --ink: #10201a;
-  --muted: #58695f;
-  --line: #d9e2db;
-  --accept: #0a7046;
-  --accept-bg: #dcf2e5;
-  --counter: #835500;
-  --counter-bg: #ffedbd;
+  --surface-2: #efefe9;
+  --ink: #0f100d;
+  --muted: #62645d;
+  --line: #e0e0d8;
+  --accept: #1d7a3e;
+  --accept-bg: #e3f3e1;
+  --counter: #7d5a00;
+  --counter-bg: #fbefc6;
   --lost: #8f3a2e;
   --lost-bg: #fbe5e1;
   --danger: #c0352b;
-  --scrim: rgb(4 14 10 / 0.52);
-  --focus: #0a7f4e;
-  --map-land: #e4ebe2;
-  --map-park: #d1e5cc;
-  --map-water: #b6d5e0;
+  --scrim: rgb(10 10 8 / 0.52);
+  --focus: #0f100d;
+  --map-land: #ebebe5;
+  --map-park: #dde7cf;
+  --map-water: #c8dce5;
   --map-road: #ffffff;
-  --map-major: #f3cc5c;
-  --map-label: #77887e;
-  --map-wlabel: #55889a;
-  --shadow-card-value: 0 1px 2px rgb(8 40 26 / 0.06), 0 18px 36px -20px rgb(8 40 26 / 0.45);
-  --shadow-soft-value: 0 1px 3px rgb(8 40 26 / 0.16);
+  --map-major: #e2ee8a;
+  --map-label: #84867e;
+  --map-wlabel: #5a8596;
+  --shadow-card-value: 0 1px 2px rgb(15 16 13 / 0.06), 0 18px 36px -20px rgb(15 16 13 / 0.4);
+  --shadow-soft-value: 0 1px 3px rgb(15 16 13 / 0.16);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --hero: #04261a;
-    --hero-2: #0a422d;
-    --hero-line: rgb(240 251 244 / 0.16);
-    --on-hero: #eefbf3;
-    --on-hero-muted: #97c6ad;
-    --brand: #33c784;
-    --brand-strong: #5cdc9e;
-    --brand-soft: #11301f;
-    --on-brand: #04170d;
-    --danfo-soft: #2e2610;
-    --bg: #0b130f;
-    --surface: #121d18;
-    --surface-2: #192720;
-    --ink: #e5efe9;
-    --muted: #98aea1;
-    --line: #26392f;
-    --accept: #63e0a5;
-    --accept-bg: #113524;
-    --counter: #ffd467;
-    --counter-bg: #3a2e0e;
+    --hero: #000000;
+    --hero-2: #1b1c18;
+    --hero-line: rgb(255 255 255 / 0.13);
+    --on-hero: #f4f4ee;
+    --on-hero-muted: #9fa197;
+    --brand: #d5f02a;
+    --brand-strong: #e4f76e;
+    --brand-soft: #262a12;
+    --on-brand: #12140a;
+    --danfo-soft: #262a12;
+    --bg: #0b0b09;
+    --surface: #151613;
+    --surface-2: #1e1f1b;
+    --ink: #f1f1ea;
+    --muted: #a3a59b;
+    --line: #2c2d27;
+    --accept: #6fdc96;
+    --accept-bg: #14301d;
+    --counter: #f1d36a;
+    --counter-bg: #362d0e;
     --lost: #ff9f92;
     --lost-bg: #3a1c17;
     --danger: #ff8a7a;
-    --scrim: rgb(0 0 0 / 0.6);
-    --focus: #ffc72c;
-    --map-land: #16211b;
-    --map-park: #1a2e21;
-    --map-water: #0e2a33;
-    --map-road: #26372e;
-    --map-major: #6e5b1d;
-    --map-label: #7e9387;
-    --map-wlabel: #4f8596;
+    --scrim: rgb(0 0 0 / 0.62);
+    --focus: #d5f02a;
+    --map-land: #161714;
+    --map-park: #1b2216;
+    --map-water: #12222a;
+    --map-road: #2a2b26;
+    --map-major: #4d5719;
+    --map-label: #84867d;
+    --map-wlabel: #5a8494;
     --shadow-card-value: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 36px -20px rgb(0 0 0 / 0.8);
     --shadow-soft-value: 0 1px 3px rgb(0 0 0 / 0.5);
     color-scheme: dark;
@@ -185,12 +187,12 @@ body {
 .m-wlabel { font-family: var(--font-sans); font-size: 7px; font-style: italic; fill: var(--map-wlabel); }
 .m-route-bg { fill: none; stroke: var(--surface); stroke-width: 6.5; stroke-linecap: round; }
 .m-route { fill: none; stroke: var(--ink); stroke-width: 3; stroke-linecap: round; }
-.m-pin-a { fill: var(--brand); stroke: var(--surface); stroke-width: 2; }
-.m-pin-b { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
-.m-veh { fill: var(--danfo); stroke: var(--on-danfo); stroke-width: 1.6; }
-.m-veh-dot { fill: var(--on-danfo); }
+.m-pin-a { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.m-pin-b { fill: var(--danfo); stroke: var(--ink); stroke-width: 2; }
+.m-veh { fill: var(--ink); stroke: var(--danfo); stroke-width: 1.6; }
+.m-veh-dot { fill: var(--danfo); }
 .m-other { fill: var(--surface); stroke: var(--ink); stroke-width: 1.4; }
-.m-pulse { fill: var(--brand); transform-box: fill-box; transform-origin: center; animation: mpulse 1.8s ease-out infinite; }
+.m-pulse { fill: var(--ink); transform-box: fill-box; transform-origin: center; animation: mpulse 1.8s ease-out infinite; }
 @keyframes mpulse {
   from { transform: scale(1); opacity: 0.5; }
   to { transform: scale(4.5); opacity: 0; }
