@@ -174,16 +174,20 @@ export function SosSheet({ open, onClose, trip, by }: { open: boolean; onClose: 
 }
 
 export function ShareTripButton({ trip }: { trip: Trip }) {
+  const send = trip.mode === "send";
   const share = async () => {
     const url = `${window.location.origin}/share/${trip.id}`;
-    const text = `I'm on a Maza-Maza trip with ${trip.driver.short} (${trip.driver.vehicle.plate}). Follow it live:`;
+    // Deliveries go to the receiver: they see when it arrives and can chat with the rider and the sender.
+    const text = send
+      ? `${firstName(trip.customer.name)} sent you a package with Maza-Maza. See when it arrives and chat with the rider:`
+      : `I'm on a Maza-Maza trip with ${trip.driver.short} (${trip.driver.vehicle.plate}). Follow it live:`;
     try {
       if (navigator.share) {
-        await navigator.share({ title: "My Maza-Maza trip", text, url });
+        await navigator.share({ title: send ? "Your Maza-Maza delivery" : "My Maza-Maza trip", text, url });
         return;
       }
       await navigator.clipboard.writeText(`${text} ${url}`);
-      toast("customer", "Trip link copied. Paste it into WhatsApp or SMS.");
+      toast("customer", send ? `Tracking link copied. Send it to ${trip.receiver || "the receiver"} on WhatsApp or SMS.` : "Trip link copied. Paste it into WhatsApp or SMS.");
     } catch {
       /* the person closed the share sheet */
     }
@@ -191,7 +195,7 @@ export function ShareTripButton({ trip }: { trip: Trip }) {
   return (
     <button type="button" onClick={share} className="grid justify-items-center gap-1 rounded-2xl border-[1.5px] border-line bg-surface px-1 py-2.5 text-[0.72rem] font-bold hover:border-ink">
       <Share2 size={20} aria-hidden />
-      Share trip
+      {send ? "Send to receiver" : "Share trip"}
     </button>
   );
 }

@@ -11,7 +11,7 @@ import "@/components/landing/landing.css";
 
 export const metadata: Metadata = {
   title: { absolute: "Maza-Maza: name your price" },
-  description: "Rides and deliveries in Lagos at the price you agree. Drivers keep every naira.",
+  description: "Rides and deliveries in Port Harcourt at the price you agree. Drivers keep every naira.",
 };
 
 export default function Home() {

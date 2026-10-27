@@ -31,12 +31,12 @@ export function WebAppBand() {
               <b>Until 23:59 tonight</b>
             </div>
             <div className="ps-offer">
-              <b>Ikeja → Maryland</b>
+              <b>Rumuokoro → GRA</b>
               <span className="amt">₦1,800</span>
               <span>1.2 km away</span>
             </div>
             <div className="ps-offer">
-              <b>Surulere → Yaba</b>
+              <b>Trans-Amadi → Woji</b>
               <span className="amt">₦2,200</span>
               <span>2.4 km away</span>
             </div>

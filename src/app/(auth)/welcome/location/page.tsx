@@ -3,9 +3,10 @@
 import { MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { nearestPlace } from "@/lib/data/places";
+import { locationProblem, pickupHere } from "@/lib/location";
 import { nextWelcomeStep } from "@/components/auth/onboarding";
 import { useStore } from "@/lib/store";
+import { toast } from "@/lib/toasts";
 
 /** Asks before the browser does, so people know why we want their location. */
 export default function LocationPermissionPage() {
@@ -18,17 +19,16 @@ export default function LocationPermissionPage() {
     router.push(nextWelcomeStep("location"));
   };
 
+  // Your exact spot becomes the pickup, and the map follows you from now on.
   const allow = () => {
-    if (!navigator.geolocation) return done();
     setAsking(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        s.setDraft({ pickupId: nearestPlace(pos.coords.latitude, pos.coords.longitude).id });
-        done();
-      },
-      () => done(),
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
+    pickupHere()
+      .then((p) => {
+        s.addPlace(p);
+        s.setDraft({ pickupId: p.id });
+      })
+      .catch((e: Error) => toast("customer", locationProblem(e.message)))
+      .finally(done);
   };
 
   return (

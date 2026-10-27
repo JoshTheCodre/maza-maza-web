@@ -1,3 +1,5 @@
+import type { FareSettings } from "./pricing";
+
 // Domain types shared by every screen. Amounts are whole naira in the UI;
 // the database will store kobo and convert at the API boundary.
 
@@ -67,6 +69,15 @@ export interface RideRequest {
   reach: number;
 }
 
+/**
+ * A dispatch rider about to finish a delivery nearby can take the next job. The customer waits a few minutes
+ * longer and pays less than the bargained price (Settings → fare → nextJobPct, 10% by default).
+ */
+export interface NextJob {
+  /** Minutes until the rider drops off their current package. */
+  freeInMin: number;
+}
+
 export type BidKind = "accept" | "counter";
 export type BidStatus = "active" | "declined" | "won" | "lost";
 
@@ -78,6 +89,7 @@ export interface Bid {
   kind: BidKind;
   amount: number;
   etaMin: number;
+  nextJob?: NextJob;
   status: BidStatus;
   createdAt: number;
 }
@@ -95,6 +107,10 @@ export interface Trip {
   pickupId: string;
   dropId: string;
   price: number;
+  /** Set when the rider was booked while finishing another delivery: the bargained price before the discount. */
+  nextJob?: NextJob & { fullPrice: number };
+  /** Who's receiving a delivery, from the booking. They can follow it and chat from the tracking link. */
+  receiver?: string;
   payMethod: PayMethod;
   notes: string[];
   stage: TripStage;
@@ -110,11 +126,13 @@ export interface Trip {
 }
 
 export type Side = "customer" | "driver";
+/** Deliveries add the receiver to the chat, from the tracking link. */
+export type ChatFrom = Side | "recipient";
 
 export interface ChatMessage {
   id: string;
   tripId: string;
-  from: Side;
+  from: ChatFrom;
   body: string;
   createdAt: number;
 }
@@ -134,12 +152,14 @@ export interface Settings {
   minOffer: number;
   raiseStep: number;
   requestTtlMin: number;
+  /** Fare rates. Missing on data saved before fares existed; read through fareSettings(). */
+  fare?: FareSettings;
 }
 
 export interface DayTicket {
   id: string;
   number: string;
-  /** Lagos calendar date, YYYY-MM-DD. */
+  /** Nigerian calendar date, YYYY-MM-DD. */
   serviceDate: string;
   vehicleType: VehicleType;
   price: number;

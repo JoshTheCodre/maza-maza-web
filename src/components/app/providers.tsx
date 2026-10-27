@@ -3,6 +3,7 @@
 import { WifiOff } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Logo } from "@/components/ui/display";
+import { resumeIfAllowed } from "@/lib/location";
 import { startSimulation } from "@/lib/sim";
 import { STORAGE_KEY, useStore } from "@/lib/store";
 
@@ -17,10 +18,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (e.key === STORAGE_KEY) useStore.persist.rehydrate();
     };
     window.addEventListener("storage", onStorage);
-    const stop = startSimulation();
+    resumeIfAllowed();
+    let stop = startSimulation();
+    // A page parked in the back/forward cache must let go of the simulation, or the tab you're
+    // actually looking at waits for it forever. Take it back if the page is restored.
+    const onHide = () => stop();
+    const onShow = (e: PageTransitionEvent) => {
+      if (e.persisted) stop = startSimulation();
+    };
+    window.addEventListener("pagehide", onHide);
+    window.addEventListener("pageshow", onShow);
     return () => {
       alive = false;
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener("pagehide", onHide);
+      window.removeEventListener("pageshow", onShow);
       stop();
     };
   }, []);

@@ -2,12 +2,13 @@
 
 import { AdvancedMarker, APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect } from "react";
+import { CITY } from "@/lib/city";
 import { GOOGLE_MAP_ID, GOOGLE_MAPS_KEY } from "@/lib/config";
 import type { MapProps } from "./map-view";
 
-const LAGOS = { lat: 6.5244, lng: 3.3792 };
+const START = CITY.center;
 
-function FitAndRoute({ pickup, drop }: Pick<MapProps, "pickup" | "drop">) {
+function FitAndRoute({ pickup, drop, path: road }: Pick<MapProps, "pickup" | "drop"> & { path?: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
     if (!map || !pickup) return;
@@ -15,17 +16,19 @@ function FitAndRoute({ pickup, drop }: Pick<MapProps, "pickup" | "drop">) {
       map.panTo({ lat: pickup.lat, lng: pickup.lng });
       return;
     }
-    const path = [
-      { lat: pickup.lat, lng: pickup.lng },
-      { lat: drop.lat, lng: drop.lng },
-    ];
-    // The real route comes from the Routes API; until then a straight line marks the trip.
+    // The road route once it's fetched; a straight line until then.
+    const path = road?.length
+      ? road.map(([lng, lat]) => ({ lat, lng }))
+      : [
+          { lat: pickup.lat, lng: pickup.lng },
+          { lat: drop.lat, lng: drop.lng },
+        ];
     const line = new google.maps.Polyline({ path, strokeColor: "#0f100d", strokeOpacity: 0.85, strokeWeight: 4, map });
     const bounds = new google.maps.LatLngBounds();
     path.forEach((p) => bounds.extend(p));
     map.fitBounds(bounds, 64);
     return () => line.setMap(null);
-  }, [map, pickup, drop]);
+  }, [map, pickup, drop, road]);
   return null;
 }
 
@@ -38,8 +41,8 @@ const pin = (bg: string, size: number, square = false) => ({
   boxShadow: "0 1px 4px rgb(0 0 0 / 0.35)",
 });
 
-export function GoogleStreetMap({ pickup, drop, vehicle, others }: MapProps) {
-  const center = pickup ? { lat: pickup.lat, lng: pickup.lng } : LAGOS;
+export function GoogleStreetMap({ pickup, drop, vehicle, others, path, me }: MapProps & { path?: [number, number][]; me?: { lat: number; lng: number } }) {
+  const center = pickup ? { lat: pickup.lat, lng: pickup.lng } : START;
   return (
     <APIProvider apiKey={GOOGLE_MAPS_KEY} region="NG" language="en">
       <Map
@@ -51,7 +54,7 @@ export function GoogleStreetMap({ pickup, drop, vehicle, others }: MapProps) {
         disableDefaultUI
         clickableIcons={false}
       >
-        <FitAndRoute pickup={pickup} drop={drop} />
+        <FitAndRoute pickup={pickup} drop={drop} path={path} />
         {others?.map((o, i) => (
           <AdvancedMarker key={i} position={{ lat: o.lat, lng: o.lng }}>
             <div style={pin("#ffffff", 12)} />
@@ -65,6 +68,11 @@ export function GoogleStreetMap({ pickup, drop, vehicle, others }: MapProps) {
         {drop && (
           <AdvancedMarker position={{ lat: drop.lat, lng: drop.lng }} title="Drop-off">
             <div style={{ ...pin("#d5f02a", 14, true), border: "2px solid #0f100d" }} />
+          </AdvancedMarker>
+        )}
+        {me && (
+          <AdvancedMarker position={{ lat: me.lat, lng: me.lng }} title="You">
+            <div style={{ ...pin("#2f7cf6", 16), border: "3px solid #fff" }} />
           </AdvancedMarker>
         )}
         {vehicle && (

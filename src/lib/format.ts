@@ -18,7 +18,7 @@ const pad = (n: number) => String(n).padStart(2, "0");
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** Lagos is UTC+1 all year. */
+/** Nigeria is on West Africa Time, UTC+1, all year (the helpers below say "lagos" for that time zone). */
 const LAGOS_OFFSET_MS = 60 * 60 * 1000;
 const lagos = (ts: number) => new Date(ts + LAGOS_OFFSET_MS);
 
@@ -28,7 +28,7 @@ export const clock = (ts: number) => {
 };
 export const clockSeconds = (ts: number) => `${clock(ts)}:${pad(lagos(ts).getUTCSeconds())}`;
 
-/** YYYY-MM-DD in Lagos time. */
+/** YYYY-MM-DD in Nigerian time. */
 export const lagosDate = (ts: number) => {
   const d = lagos(ts);
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
@@ -53,6 +53,8 @@ export const hoursMinutes = (ms: number) => {
   return h ? `${h}h ${m}m` : `${m}m`;
 };
 
+/** 42 min, or 1 hr 5 min. */
+export const minutesLabel = (m: number) => (m < 60 ? `${m} min` : `${Math.floor(m / 60)} hr${m % 60 ? ` ${m % 60} min` : ""}`);
 export const minutesSeconds = (s: number) => `${Math.floor(s / 60)}:${pad(s % 60)}`;
 
 export const partOfDay = (now: number) => {

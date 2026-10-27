@@ -12,10 +12,13 @@ import { Avatar, LockedFare, Stars } from "@/components/ui/display";
 import { MapView } from "@/components/map/map-view";
 import { useNow } from "@/hooks/use-now";
 import { DRIVER_CANCEL_REASONS, NO_SHOW_WAIT_MS } from "@/lib/config";
-import { place, roadKm } from "@/lib/data/places";
-import { firstName, minutesSeconds, naira } from "@/lib/format";
+import { FeedCard } from "@/components/driver/feed-card";
+import { place } from "@/lib/data/places";
+import { tripTimes } from "@/lib/eta";
+import { clock, firstName, minutesSeconds, naira } from "@/lib/format";
 import { vehiclePosition } from "@/lib/geo";
-import { todayTicket, todaysDriverTrips, useStore } from "@/lib/store";
+import { knownRoute, useRoute } from "@/lib/routing";
+import { driverFeed, nextJobWindow, queuedDriverTrip, todayTicket, todaysDriverTrips, useStore } from "@/lib/store";
 import type { Trip } from "@/lib/types";
 
 export default function DriverTripPage() {
@@ -49,11 +52,16 @@ function Live({ trip }: { trip: Trip }) {
   const payout = s.driver.profile.payout;
   const waited = now - trip.stageAt;
   const noShowIn = Math.max(0, Math.ceil((NO_SHOW_WAIT_MS - waited) / 1000));
+  const route = useRoute(a, b);
+  const times = tripTimes(trip, route ?? knownRoute(a, b), now);
+  const freeIn = nextJobWindow(s, now);
+  const queued = queuedDriverTrip(s);
+  const nextJobs = freeIn !== null ? driverFeed(s, now) : [];
 
   const copy = {
-    to_pickup: { title: `Pick up ${name}`, sub: `${a.name} · about ${trip.etaMin} min`, cta: "I've arrived" },
+    to_pickup: { title: `Pick up ${name}`, sub: `${a.name} · about ${times.toPickup} min away`, cta: "I've arrived" },
     at_pickup: { title: send ? `Collect the ${item} from ${name}` : `Waiting for ${name}`, sub: send ? "Take a photo of the item before you leave" : `Confirm the name before ${name} gets in`, cta: send ? "Start delivery" : "Start trip" },
-    on_trip: { title: `${send ? "Deliver to" : "Drop off at"} ${b.name}`, sub: `${roadKm(a, b)} km · fare locked at ${naira(trip.price)}`, cta: send ? "Mark as delivered" : "End trip" },
+    on_trip: { title: `${send ? "Deliver to" : "Drop off at"} ${b.name}`, sub: `${times.leftToDrop} min left · arrive about ${clock(times.arriveAt)} · ${naira(trip.price)} locked`, cta: send ? "Mark as delivered" : "End trip" },
     payment: {
       title: `Collect ${naira(trip.price)}`,
       sub: trip.customerPaid
@@ -69,7 +77,7 @@ function Live({ trip }: { trip: Trip }) {
   const step = ["to_pickup", "at_pickup", "on_trip", "payment"].indexOf(trip.stage);
 
   return (
-    <MapLayout map={<MapView pickup={a} drop={b} vehicle={vehiclePosition(trip.stage, trip.stageAt, now, a, b, true)} />}>
+    <MapLayout map={<MapView pickup={a} drop={b} vehicle={vehiclePosition(trip.stage, trip.stageAt, now, a, b, true, route?.road ? route.path : undefined)} />}>
       <Panel
         footer={
           <Button size="lg" block onClick={() => (trip.stage === "payment" ? s.confirmPaid(trip.id) : s.advanceTrip(trip.id))}>
@@ -111,6 +119,26 @@ function Live({ trip }: { trip: Trip }) {
             SOS
           </button>
         </div>
+        {queued && queued.id !== trip.id && (
+          <p className="rounded-xl bg-danfo-soft px-3 py-2.5 text-[0.84rem]">
+            <b>Next job lined up:</b> {firstName(queued.customer.name)} at {place(queued.pickupId).name}, {naira(queued.price)}. It starts when you finish here.
+          </p>
+        )}
+        {freeIn !== null && (
+          <section className="grid gap-2">
+            <h2 className="font-bold">Take your next job</h2>
+            <p className="text-[0.8rem] text-muted">You&apos;re nearly done. Customers near your drop-off can book you now and pay a little less.</p>
+            {nextJobs.length ? (
+              <ul className="grid gap-2">
+                {nextJobs.map((r) => (
+                  <FeedCard key={r.id} req={r} now={now} nextJob={{ freeInMin: freeIn }} />
+                ))}
+              </ul>
+            ) : (
+              <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-[0.84rem] text-muted">Looking for customers near {b.name}…</p>
+            )}
+          </section>
+        )}
         {trip.stage === "at_pickup" && (
           <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-[0.84rem] text-muted">
             {noShowIn > 0 ? (

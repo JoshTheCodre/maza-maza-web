@@ -6,20 +6,31 @@ import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/display";
 import { clock, firstName } from "@/lib/format";
 import { tripMessages, useStore } from "@/lib/store";
-import type { Side, Trip } from "@/lib/types";
+import type { ChatFrom, Trip } from "@/lib/types";
 
-const QUICK: Record<Side, string[]> = {
+const QUICK: Record<ChatFrom, string[]> = {
   customer: ["I'm coming out now", "Where are you?", "I'm by the gate", "Please wait 2 minutes"],
   driver: ["I'm on my way", "I've arrived", "I'm by the gate", "Traffic is heavy, 5 more minutes"],
+  recipient: ["Where are you now?", "I'm at the gate", "Please call when you're close", "Leave it at the front desk"],
 };
 
-export function ChatView({ trip, me, back }: { trip: Trip; me: Side; back: string }) {
+/** Who wrote a message, for the labels in a delivery's group chat. */
+const author = (trip: Trip, from: ChatFrom) =>
+  from === "driver" ? `${trip.driver.short} · rider` : from === "customer" ? `${firstName(trip.customer.name)} · sender` : `${trip.receiver || "Receiver"} · receiver`;
+
+/**
+ * Trip chat. Rides are one-to-one; deliveries are a group of the sender, the rider and the receiver
+ * (who joins from the tracking link), so each message shows who sent it.
+ */
+export function ChatView({ trip, me, back }: { trip: Trip; me: ChatFrom; back: string }) {
   const s = useStore();
   const [text, setText] = useState("");
   const end = useRef<HTMLDivElement>(null);
   const messages = tripMessages(s, trip.id);
-  const other = me === "customer" ? trip.driver : trip.customer;
+  const group = trip.mode === "send";
+  const other = me === "driver" ? trip.customer : trip.driver;
   const closed = trip.stage === "completed" || trip.stage === "cancelled";
+  const title = !group ? other.short : me === "recipient" ? `${trip.driver.short} and ${firstName(trip.customer.name)}` : me === "customer" ? `${trip.driver.short} and ${trip.receiver || "the receiver"}` : `${firstName(trip.customer.name)} and ${trip.receiver || "the receiver"}`;
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: "end" });
@@ -38,15 +49,22 @@ export function ChatView({ trip, me, back }: { trip: Trip; me: Side; back: strin
         </Link>
         <Avatar name={other.name} />
         <div className="min-w-0">
-          <h1 className="font-bold">{other.short}</h1>
-          <p className="text-[0.76rem] text-muted">{me === "customer" ? `${trip.driver.vehicle.plate} · numbers stay private` : "Numbers stay private"}</p>
+          <h1 className="font-bold">{title}</h1>
+          <p className="text-[0.76rem] text-muted">
+            {group ? "Delivery group chat · numbers stay private" : me === "customer" ? `${trip.driver.vehicle.plate} · numbers stay private` : "Numbers stay private"}
+          </p>
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-auto bg-bg px-4 py-4">
         <div className="mx-auto grid max-w-xl gap-2">
-          {!messages.length && <p className="py-8 text-center text-[0.88rem] text-muted">Send {firstName(other.name)} a message. Keep it about the trip.</p>}
+          {!messages.length && (
+            <p className="py-8 text-center text-[0.88rem] text-muted">
+              {group ? "Everyone on this delivery sees these messages. Keep it about the package." : `Send ${firstName(other.name)} a message. Keep it about the trip.`}
+            </p>
+          )}
           {messages.map((m) => (
             <div key={m.id} className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${m.from === me ? "justify-self-end rounded-br-md bg-brand text-on-brand" : "justify-self-start rounded-bl-md bg-surface"}`}>
+              {group && m.from !== me && <p className="text-[0.7rem] font-bold text-muted">{author(trip, m.from)}</p>}
               <p className="text-[0.94rem]">{m.body}</p>
               <p className={`text-right text-[0.66rem] ${m.from === me ? "text-on-brand/75" : "text-muted"}`}>{clock(m.createdAt)}</p>
             </div>
@@ -79,7 +97,7 @@ export function ChatView({ trip, me, back }: { trip: Trip; me: Side; back: strin
               id="chat-text"
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={`Message ${firstName(other.name)}`}
+              placeholder={group ? "Message the group" : `Message ${firstName(other.name)}`}
               autoComplete="off"
               className="min-h-12 min-w-0 flex-1 rounded-full bg-surface-2 px-4 outline-none focus:ring-2 focus:ring-brand"
             />
@@ -94,7 +112,7 @@ export function ChatView({ trip, me, back }: { trip: Trip; me: Side; back: strin
 }
 
 /** Chat button for trip screens, with a dot when the other person wrote last. */
-export function ChatButton({ trip, me, href }: { trip: Trip; me: Side; href: string }) {
+export function ChatButton({ trip, me, href }: { trip: Trip; me: ChatFrom; href: string }) {
   const last = useStore((s) => {
     const m = tripMessages(s, trip.id);
     return m[m.length - 1]?.from;

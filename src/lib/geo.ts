@@ -1,3 +1,4 @@
+import { pointAlong } from "./routing";
 import type { Place, TripStage } from "./types";
 
 export interface MapPoint {
@@ -27,18 +28,28 @@ const along = (a: MapPoint, b: MapPoint, t: number): MapPoint => {
 };
 
 /**
- * Where to draw the vehicle during a trip. The real app uses the driver's live GPS;
- * until then the app animates along the route. `live` trips stop short until the driver taps the next step.
+ * How far through the current leg a trip is, from 0 to 1. The real app uses the driver's live GPS; until then
+ * trips play out quickly. `live` trips (where you're the driver) stop short until you tap the next step.
  */
-export function vehiclePosition(stage: TripStage, stageAt: number, now: number, a: Place, b: Place, live: boolean): MapPoint {
+export function legProgress(stage: TripStage, stageAt: number, now: number, live: boolean) {
   const el = (now - stageAt) / 1000;
+  if (stage === "to_pickup") return Math.min(live ? 0.92 : 1, el / (live ? 14 : 8));
+  if (stage === "on_trip") return Math.min(live ? 0.95 : 1, el / (live ? 16 : 10));
+  return 1;
+}
+
+/** Where to draw the vehicle during a trip: along the road route when we have it, otherwise a gentle curve. */
+export function vehiclePosition(stage: TripStage, stageAt: number, now: number, a: Place, b: Place, live: boolean, path?: [number, number][]): MapPoint {
+  const k = legProgress(stage, stageAt, now, live);
   if (stage === "to_pickup") {
-    const k = Math.min(live ? 0.92 : 1, el / (live ? 14 : 8));
     const start = { x: a.x - 30, y: a.y - 22, lat: a.lat + 0.012, lng: a.lng - 0.015 };
     return { x: mix(start.x, a.x, k), y: mix(start.y, a.y, k), lat: mix(start.lat, a.lat, k), lng: mix(start.lng, a.lng, k) };
   }
   if (stage === "at_pickup") return a;
-  if (stage === "on_trip") return along(a, b, Math.min(live ? 0.95 : 1, el / (live ? 16 : 10)));
+  if (stage === "on_trip") {
+    const p = along(a, b, k);
+    return path && path.length > 1 ? { ...p, ...pointAlong(path, k) } : p;
+  }
   return b;
 }
 

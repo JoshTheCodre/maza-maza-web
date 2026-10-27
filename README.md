@@ -1,6 +1,7 @@
 # Maza-Maza web app
 
-Ride hailing and dispatch for Lagos where the customer and driver agree the fare.
+Ride hailing and dispatch where the customer and driver agree the fare. Launching in **Port Harcourt** only:
+the city, its service area and its landmarks live in `src/lib/city.ts` and `src/lib/data/places.ts`.
 Customers make an offer, drivers accept or counter, and drivers pay a **day ticket**
 instead of commission. Ticket prices and limits are set in Admin → Settings.
 
@@ -21,7 +22,20 @@ code works until SMS/WhatsApp is connected), sets their name, and lands on the r
 - **Become a driver:** Account → *Drive or ride with Maza-Maza* → sign up. Approve the
   application at `/admin/drivers`, then switch to driver mode from the Account tab.
 - **Switch back:** Driver Account → *Switch to rider mode*.
-- **Admin:** `/admin` (any logged-in account for now).
+- **Admin:** `/admin` (any logged-in account for now). Fare rates and the fuel price are in Admin → Settings.
+
+**Testing on a phone:** browsers only share location and the camera on secure pages, so plain
+`http://192.168…` won't work. Run `npm run dev:phone` (HTTPS with a self-signed certificate on your
+network), open `https://<your-computer's-IP>:3100` on the phone and accept the certificate warning.
+
+**Maps, routes and fares** work without any keys:
+- Street maps are OpenStreetMap via [OpenFreeMap](https://openfreemap.org) tiles and MapLibre. Its web
+  worker is copied to `public/maplibre/` after `npm install` (`scripts/copy-map-worker.mjs`).
+- Road distances and times come from the public [OSRM](https://project-osrm.org) demo server and are cached
+  on the device (`src/lib/routing.ts`). It's for light use only; the backend should use Google Routes or Mapbox.
+- "Use my location" names your spot with [Photon](https://photon.komoot.io) (OpenStreetMap search).
+- The recommended fare is in `src/lib/pricing.ts`: base + fuel (km ÷ km/L × pump price) + upkeep per km +
+  driver's time per minute in today's traffic, plus rush hour, late night, an airport fee and a minimum fare.
 
 ## Screens
 
@@ -33,7 +47,7 @@ code works until SMS/WhatsApp is connected), sets their name, and lands on the r
 | Rider | `/ride` · `/ride/search` · `/ride/offer` · `/ride/request/[id]` · `/ride/trip/[id]` (+ `/chat`) · `/activity` (+ `/[id]`) · `/account` (+ `/profile`, `/places`, `/safety`) · `/notifications` · `/help` |
 | Driver | `/driver/signup` · `/driver` offers · `/driver/trip/[id]` (+ `/chat`) · `/driver/ticket` · `/driver/wallet` · `/driver/earnings` · `/driver/account` (+ `/payout`, `/profile`) · `/driver/notifications` · `/driver/help` |
 | Admin | `/admin` · `/admin/drivers` (+ `/[id]`) · `/admin/customers` · `/admin/trips` · `/admin/tickets` · `/admin/reports` · `/admin/settings` |
-| Public | `/share/[id]` shared trip · not-found page |
+| Public | `/share/[id]` trip link: family follow a ride; a delivery's receiver sees when it arrives · `/share/[id]/chat` receiver's group chat with the rider and sender · not-found page |
 
 ## Where things live
 
@@ -44,7 +58,10 @@ code works until SMS/WhatsApp is connected), sets their name, and lands on the r
 - `src/lib/sim.ts`: the other people on the platform. Delete it once the API and live sockets exist.
 - `src/lib/config.ts`: default settings, cancel reasons, bank list, map keys.
 - `src/components/map/`: `MapView` uses Google Maps when `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-  is set (plus `NEXT_PUBLIC_GOOGLE_MAP_ID` for markers), otherwise a drawn Lagos map.
+  is set (plus `NEXT_PUBLIC_GOOGLE_MAP_ID` for markers), otherwise the OpenStreetMap map (`real-map.tsx`),
+  falling back to a simple drawn map of the city if the browser can't run it. Both draw the road route and your live position.
+- `src/lib/pricing.ts`, `routing.ts`, `eta.ts`, `location.ts`: recommended fares, road routes, trip times,
+  and the device's live position.
 - `src/components/auth/`, `src/components/app/`: login screens and shared pieces
   (chat, notifications, help, profile, cancel/SOS sheets).
 - `src/app/globals.css`: colour and type tokens (light and dark).
@@ -53,7 +70,8 @@ code works until SMS/WhatsApp is connected), sets their name, and lands on the r
 
 1. SQLite + Drizzle schema from `src/lib/types.ts` (money in kobo).
 2. Replace store actions with API routes and server actions; keep the same names.
-3. Live offers, bids, chat and trip updates over WebSockets or SSE (replaces `sim.ts`).
+3. Live offers, bids, chat and trip updates over WebSockets or SSE (replaces `sim.ts`), including each
+   driver's GPS every few seconds, so riders, receivers and family see the real vehicle move.
 4. Paystack checkout and webhooks for wallet top-ups; resolve bank accounts on the payout page.
-5. Google Places Autocomplete in `/ride/search`; Routes API for distance.
+5. Google Places Autocomplete in `/ride/search`; Google Routes (or Mapbox) with live traffic instead of the OSRM demo.
 6. Phone login with WhatsApp/SMS codes (e.g. Termii), Google sign-in (OAuth), and admin-only access to `/admin`.

@@ -51,7 +51,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="wrap foot-bottom">
-        <p>© 2026 Maza-Maza · Made in Lagos</p>
+        <p>© 2026 Maza-Maza · Made in Port Harcourt</p>
         <p className="foot-legal">
           <Link href="/help">Terms</Link>
           <Link href="/help">Privacy</Link>

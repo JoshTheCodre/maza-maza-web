@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/controls";
 import { Logo } from "@/components/ui/display";
 import { Toaster } from "@/components/ui/toaster";
+import { CITY } from "@/lib/city";
 import { naira } from "@/lib/format";
 import { useStore } from "@/lib/store";
 import type { VehicleType } from "@/lib/types";
@@ -55,7 +56,7 @@ export default function DriverSignup() {
     submit({
       name: f.name.trim(),
       phone: f.phone.trim(),
-      city: "Lagos",
+      city: CITY.name,
       vehicleType: type,
       vehicle: f.vehicle.trim(),
       plate: f.plate.trim().toUpperCase(),
@@ -118,10 +119,10 @@ export default function DriverSignup() {
               <label htmlFor="city" className="text-[0.85rem] font-bold">
                 City
               </label>
-              <select id="city" className="min-h-11 rounded-xl border-[1.5px] border-line bg-surface px-3 font-semibold" defaultValue="Lagos">
-                <option>Lagos</option>
+              <select id="city" className="min-h-11 rounded-xl border-[1.5px] border-line bg-surface px-3 font-semibold" defaultValue={CITY.name}>
+                <option>{CITY.name}</option>
+                <option disabled>Lagos (coming soon)</option>
                 <option disabled>Abuja (coming soon)</option>
-                <option disabled>Port Harcourt (coming soon)</option>
               </select>
             </div>
             <p className="text-[0.84rem] text-muted">You&apos;ll need: your NIN, driver&apos;s licence, vehicle papers, a selfie, a photo of your vehicle and a guarantor.</p>

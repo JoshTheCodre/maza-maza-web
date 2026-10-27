@@ -10,11 +10,11 @@ import { EmptyState } from "@/components/ui/display";
 import { MapView } from "@/components/map/map-view";
 import { useNow } from "@/hooks/use-now";
 import { VEHICLE_LABEL } from "@/lib/config";
-import { place } from "@/lib/data/places";
+import { DEFAULT_PICKUP, place } from "@/lib/data/places";
 import { dayLabel, naira } from "@/lib/format";
-import { driverFeed, driverMode, myBidFor, ticketPrice, todayTicket, useStore, walletBalance } from "@/lib/store";
+import { driverFeed, driverMode, myBidFor, nextJobWindow, ticketPrice, todayTicket, useStore, walletBalance } from "@/lib/store";
 
-const DRIVER_SPOT = "yaba";
+const DRIVER_SPOT = DEFAULT_PICKUP;
 
 export default function DriverOffers() {
   const s = useStore();
@@ -22,6 +22,7 @@ export default function DriverOffers() {
   const [buying, setBuying] = useState(false);
   const ticket = todayTicket(s, now);
   const feed = driverFeed(s, now);
+  const freeIn = nextJobWindow(s, now);
   const fresh = feed.filter((r) => r.status === "open" && !myBidFor(s, r.id)).length;
 
   let body;
@@ -44,7 +45,7 @@ export default function DriverOffers() {
         <p className="kicker">Offers near you · {fresh} new</p>
         <ul className="grid gap-2.5" aria-live="polite">
           {feed.map((r) => (
-            <FeedCard key={r.id} req={r} now={now} />
+            <FeedCard key={r.id} req={r} now={now} nextJob={freeIn !== null ? { freeInMin: freeIn } : undefined} />
           ))}
         </ul>
       </>

@@ -3,15 +3,19 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MapLayout, Panel } from "@/components/app/layout-parts";
+import { FareGuide, TripFacts } from "@/components/customer/fare-guide";
 import { ModeSwitch } from "@/components/customer/parts";
 import { Button } from "@/components/ui/button";
 import { Chip, NairaStepper } from "@/components/ui/controls";
 import { MapView } from "@/components/map/map-view";
+import { useNow } from "@/hooks/use-now";
+import { useQuote } from "@/hooks/use-quote";
 import { PARCEL_TYPES, RIDE_NOTES } from "@/lib/config";
-import { place, roadKm, trafficMinutes } from "@/lib/data/places";
+import { place } from "@/lib/data/places";
 import { naira } from "@/lib/format";
+import { fareSettings, minutesAway } from "@/lib/pricing";
 import { openCustomerRequest, useStore } from "@/lib/store";
 import type { PayMethod } from "@/lib/types";
 
@@ -21,15 +25,30 @@ export default function OfferPage() {
   const d = s.customer.draft;
   const open = openCustomerRequest(s);
   const MIN_OFFER = s.settings.minOffer;
+  const now = useNow(30_000);
+  const a = place(d.pickupId);
+  const b = d.dropId ? place(d.dropId) : undefined;
+  const q = useQuote(a, b, d.mode);
+  const recommended = q?.quote.recommended;
+  const setDraft = s.setDraft;
+
+  // The offer starts at the recommended fare, sometimes worked out before the road route has arrived. When the
+  // better figure lands (or the hour's traffic changes it), follow it, unless you've changed the offer yourself.
+  const lastRecommended = useRef(recommended);
+  useEffect(() => {
+    if (recommended === undefined) return;
+    const prev = lastRecommended.current;
+    if (prev !== undefined && recommended !== prev && d.offer === prev) setDraft({ offer: recommended });
+    lastRecommended.current = recommended;
+  }, [recommended, d.offer, setDraft]);
 
   useEffect(() => {
     if (!d.dropId) router.replace("/ride/search");
   }, [d.dropId, router]);
-  if (!d.dropId) return null;
+  if (!b || !q) return null;
 
-  const a = place(d.pickupId);
-  const b = place(d.dropId);
-  const km = roadKm(a, b);
+  // Nearby drivers are about a kilometre away until live GPS arrives.
+  const pickupMin = minutesAway(1.2, d.mode, now);
   const last = s.customer.lastOffers[`${d.pickupId}>${d.dropId}`];
   const ok = d.offer >= MIN_OFFER && !open;
   const toggleNote = (n: string) => s.setDraft({ notes: d.notes.includes(n) ? d.notes.filter((x) => x !== n) : [...d.notes, n] });
@@ -72,7 +91,7 @@ export default function OfferPage() {
               {a.name} → {b.name}
             </h1>
             <p className="text-[0.78rem] text-muted">
-              About {km} km · {trafficMinutes(km)} in traffic
+              {d.mode === "ride" ? "Drivers" : "Riders"} nearby are about {pickupMin} min away
             </p>
           </div>
           <Link href="/ride/search" onClick={() => s.setDraft({ editing: "drop" })} className="flex-none text-[0.86rem] font-bold text-brand">
@@ -84,6 +103,7 @@ export default function OfferPage() {
             You have an open {naira(open.offer)} offer. Open it to see replies →
           </Link>
         )}
+        <TripFacts quote={q.quote} now={now} pickupMin={pickupMin} />
         <ModeSwitch />
         {d.mode === "send" && (
           <div className="grid gap-2">
@@ -112,10 +132,10 @@ export default function OfferPage() {
             <label htmlFor="offer" className="font-bold">
               Your offer
             </label>
-            <span className="text-[0.76rem] text-muted">{last ? `Last time you offered ${naira(last)}` : "No fixed fares"}</span>
+            <span className="text-[0.76rem] text-muted">{last ? `Last time you offered ${naira(last)}` : "You name the price"}</span>
           </div>
           <NairaStepper id="offer" value={d.offer} onChange={(v) => s.setDraft({ offer: v })} />
-          <p className="text-center text-[0.74rem] text-muted">Maza-Maza doesn&apos;t suggest fares. Offer what you&apos;d pay on the street.</p>
+          <FareGuide quote={q.quote} offer={d.offer} onUse={() => s.setDraft({ offer: q.quote.recommended })} fuelPrice={fareSettings(s.settings).fuelPrice} />
         </div>
         <div className="grid gap-2">
           <p className="text-[0.85rem] font-bold">Pay the {d.mode === "ride" ? "driver" : "rider"} with</p>

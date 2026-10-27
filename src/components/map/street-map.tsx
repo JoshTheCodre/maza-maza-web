@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DEFAULT_PICKUP, place } from "@/lib/data/places";
 import { curveControl, type MapPoint } from "@/lib/geo";
 import type { MapProps } from "./map-view";
 
-// Hand-drawn Lagos used until a Google Maps key is configured.
+// A simple drawn map of the city, used only when the browser can't run the real map.
 
 function viewBoxFor(points: { x: number; y: number }[], aspect: number, minW: number, shift: number) {
   const xs = points.map((p) => p.x);
@@ -24,34 +25,56 @@ function viewBoxFor(points: { x: number; y: number }[], aspect: number, minW: nu
   return `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`;
 }
 
+// Main roads, as chains of landmarks: Ikwerre Road up to Rumuokoro, on to UNIPORT and the airport road;
+// Aba Road out to Elelenwo; and the links between them. Rough, but in the right places.
+const MAJOR = [
+  ["mile1", "rumuola", "rumuokoro", "uniport", "airport"],
+  ["phmall", "gra2", "pleasure", "shellra", "oilmill"],
+  ["gra2", "transamadi", "woji"],
+];
+const MINOR = [
+  ["mile1", "rsu"],
+  ["mile1", "phmall", "creekroad"],
+  ["rumuola", "adageorge"],
+  ["rumuola", "gra2"],
+  ["transamadi", "peterodili"],
+  ["pleasure", "rumuokoro"],
+];
+const LABELS: [string, string][] = [
+  ["mile1", "DIOBU"],
+  ["gra2", "GRA"],
+  ["rumuokoro", "RUMUOKORO"],
+  ["uniport", "CHOBA"],
+  ["transamadi", "TRANS-AMADI"],
+  ["oilmill", "ELELENWO"],
+  ["creekroad", "BOROKIRI"],
+  ["airport", "OMAGWA"],
+];
+
+const line = (ids: string[]) =>
+  ids
+    .map((id, i) => {
+      const p = place(id);
+      return `${i ? "L" : "M"}${p.x} ${p.y}`;
+    })
+    .join("");
+
 function Base() {
   return (
     <>
       <rect className="m-land" x="-200" y="-200" width="840" height="700" />
-      <rect className="m-park" x="141" y="161" width="20" height="16" rx="3" />
-      <rect className="m-park" x="58" y="40" width="26" height="14" rx="3" />
-      <path className="m-water" d="M212 108C245 98 320 106 480 116L480 206C370 212 330 214 300 213C272 212 258 208 248 205C234 201 222 194 216 182C211 160 209 130 212 108Z" />
-      <path className="m-water" d="M150 212C168 206 188 208 198 218C201 232 197 246 201 258L168 264C164 246 160 230 150 212Z" />
-      <path className="m-water" d="M-200 266C80 258 190 262 250 254C310 248 360 250 480 248L480 500L-200 500Z" />
-      <path
-        className="m-road"
-        d="M72 58L98 96M118 46L98 96M98 96L142 88M142 88L172 98M185 150L202 134M150 170L185 150M185 150L192 190L206 222M206 222L228 238C250 236 270 230 292 226M60 120L120 140M130 120L172 98M160 205L100 205L46 204M120 140L185 150M46 204L30 150L60 120M292 226L298 246M332 230L334 250M206 222L200 246M242 218L246 240M118 46L132 60L142 88M30 60L72 58M118 46L170 40M-40 120L60 120M-40 204L46 204"
-      />
-      <path
-        className="m-major"
-        d="M98 96L120 140L150 170L160 205L180 212M172 98C205 108 214 130 214 160C214 185 212 200 206 222M242 218C262 222 280 226 292 226C330 228 360 232 480 240M206 222L242 218M142 88L185 150M118 46L118 -40"
-      />
-      <text className="m-label" x="100" y="34">IKEJA</text>
-      <text className="m-label" x="150" y="140">YABA</text>
-      <text className="m-label" x="112" y="186">SURULERE</text>
-      <text className="m-label" x="300" y="244">LEKKI</text>
-      <text className="m-label" x="214" y="254">V.I.</text>
-      <text className="m-label" x="244" y="210">IKOYI</text>
-      <text className="m-label" x="28" y="218">FESTAC</text>
-      <text className="m-label" x="368" y="226">AJAH</text>
-      <text className="m-label" x="176" y="90">GBAGADA</text>
-      <text className="m-wlabel" x="290" y="162">Lagos Lagoon</text>
-      <text className="m-wlabel" x="290" y="276">Atlantic Ocean</text>
+      <path className="m-water" d="M-200 262C-40 250 60 268 150 262C215 258 255 270 300 262C360 252 420 236 480 228L480 500L-200 500Z" />
+      <path className="m-water" d="M-60 200C-20 210 0 230 10 262L-60 262Z" />
+      <path className="m-road" d={MINOR.map(line).join("")} />
+      <path className="m-major" d={MAJOR.map(line).join("")} />
+      {LABELS.map(([id, label]) => (
+        <text key={id} className="m-label" x={place(id).x + 6} y={place(id).y - 6}>
+          {label}
+        </text>
+      ))}
+      <text className="m-wlabel" x="250" y="282">
+        Bonny River
+      </text>
     </>
   );
 }
@@ -77,7 +100,7 @@ export function StreetMap({ pickup, drop, vehicle, others, pulse, minWidth = 170
 
   return (
     <div ref={box} className="absolute inset-0 bg-[var(--map-land)]">
-      <svg className="block size-full" viewBox={viewBoxFor(pts.length ? pts : [{ x: 185, y: 150 }], aspect, minWidth, shift)} preserveAspectRatio="xMidYMid slice" aria-hidden>
+      <svg className="block size-full" viewBox={viewBoxFor(pts.length ? pts : [place(DEFAULT_PICKUP)], aspect, minWidth, shift)} preserveAspectRatio="xMidYMid slice" aria-hidden>
         <Base />
         {others?.map((o, i) => (
           <g key={i} transform={`translate(${o.x} ${o.y})`}>

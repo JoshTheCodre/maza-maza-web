@@ -6,7 +6,8 @@ import { Page, PageHeader } from "@/components/app/layout-parts";
 import { ReportSheet } from "@/components/customer/report-sheet";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Avatar, Plate, RouteDots, Stars } from "@/components/ui/display";
-import { place, roadKm } from "@/lib/data/places";
+import { place } from "@/lib/data/places";
+import { knownRoute } from "@/lib/routing";
 import { capitalise, clock, dayLabel, naira } from "@/lib/format";
 import { useStore } from "@/lib/store";
 
@@ -32,7 +33,7 @@ export default function TripReceipt() {
       <p className="text-muted">
         {dayLabel(t.createdAt)} at {clock(t.createdAt)}
       </p>
-      <RouteDots from={a.name} to={b.name} meta={`${roadKm(a, b)} km`} />
+      <RouteDots from={a.name} to={b.name} meta={`${knownRoute(a, b).km} km`} />
       <div className="flex items-center gap-3 rounded-2xl border-[1.5px] border-line p-3">
         <Avatar name={t.driver.name} size="lg" />
         <div className="min-w-0 flex-1">

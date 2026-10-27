@@ -4,10 +4,13 @@
 // reply to the customer's offers, other customers send offers to the driver, their
 // trips move along, and they answer chat messages. Replace with the API and live sockets.
 
-import { PLACES, roadKm } from "./data/places";
+import { place, PLACES } from "./data/places";
 import { BOT_CUSTOMERS, BOT_DRIVERS } from "./data/people";
-import { activeDriverTrip, driverCanReceive, driverMode, uid, useStore } from "./store";
-import type { Bid, RideRequest, Trip } from "./types";
+import { minutesAway } from "./pricing";
+import { quoteFor } from "./quotes";
+import { knownRoute, requestRoute } from "./routing";
+import { activeDriverTrip, driverCanReceive, driverMode, queuedDriverTrip, uid, useStore } from "./store";
+import type { Bid, NextJob, RideRequest, Trip } from "./types";
 
 interface BotPlan {
   driverIndex: number;
@@ -15,6 +18,8 @@ interface BotPlan {
   replyAt: number;
   replied: boolean;
   waitingForRaise: boolean;
+  /** A rider finishing a delivery nearby, offering to take this as their next job. */
+  nextJob?: NextJob;
 }
 
 const rand = (a: number, b: number) => a + Math.random() * (b - a);
@@ -34,14 +39,18 @@ function planFor(r: RideRequest, now: number, bids: Bid[]): BotPlan[] {
   const order = pool.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, 4);
   // After a page reload the plan is rebuilt, so drivers who already replied stay replied.
   const already = new Set(bids.filter((b) => b.requestId === r.id && b.source === "bot").map((b) => b.driver.id));
-  const p = order.map((driverIndex, i) => ({
+  // Drivers weigh offers against the recommended fare, each with their own idea of what's fair.
+  const quote = quoteFor(place(r.pickupId), place(r.dropId), r.mode, now, useStore.getState().settings);
+  const p: BotPlan[] = order.map((driverIndex, i) => ({
     driverIndex,
-    min: round50(r.firstOffer * rand(0.9, 1.45)),
+    min: round50(quote.recommended * rand(0.88, 1.2)),
     replyAt: now + 2200 + i * 1500 + rand(0, 700),
     replied: already.has(pool[driverIndex].id),
     waitingForRaise: false,
+    nextJob: r.mode === "send" && i === 1 && Math.random() < 0.7 ? { freeInMin: Math.round(rand(2, 5)) } : undefined,
   }));
-  if (!already.size && !p.some((b) => b.min <= r.firstOffer)) p[2].min = r.firstOffer;
+  // A fair offer always finds someone.
+  if (!already.size && r.firstOffer >= quote.low && !p.some((b) => b.min <= r.firstOffer)) p[2].min = r.firstOffer;
   return p;
 }
 
@@ -79,7 +88,8 @@ function driversReply(now: number) {
         driver,
         kind,
         amount: kind === "accept" ? r.offer : b.min,
-        etaMin: Math.round(rand(2, 9)),
+        etaMin: (b.nextJob?.freeInMin ?? 0) + minutesAway(rand(0.5, 3.2), r.mode, now),
+        nextJob: b.nextJob,
         status: "active",
         createdAt: now,
       });
@@ -98,7 +108,9 @@ function customersDecide(now: number) {
     decideAt.delete(bid.id);
     const ratio = bid.amount / req.offer;
     const chance = ratio <= 1 ? 0.9 : ratio <= 1.1 ? 0.75 : ratio <= 1.25 ? 0.45 : ratio <= 1.4 ? 0.2 : 0.05;
-    useStore.getState().botCustomerDecides(bid.id, Math.random() < chance && !activeDriverTrip(useStore.getState()));
+    const st = useStore.getState();
+    const free = !activeDriverTrip(st) || (!!bid.nextJob && !queuedDriverTrip(st));
+    useStore.getState().botCustomerDecides(bid.id, Math.random() < chance && free);
   }
 }
 
@@ -106,7 +118,9 @@ function tripsMove(now: number) {
   for (const t of useStore.getState().trips) {
     if (t.driverSource !== "bot") continue;
     if (t.stage === "to_pickup" || t.stage === "at_pickup" || t.stage === "on_trip") {
-      if (now - t.stageAt >= TRIP_STEP_MS[t.stage]) useStore.getState().advanceTrip(t.id);
+      // A rider booked as a next job finishes their other delivery first.
+      const wait = t.stage === "to_pickup" && t.nextJob ? TRIP_STEP_MS.to_pickup + 6000 : TRIP_STEP_MS[t.stage];
+      if (now - t.stageAt >= wait) useStore.getState().advanceTrip(t.id);
     }
   }
 }
@@ -116,6 +130,12 @@ const DRIVER_REPLIES: Record<string, string[]> = {
   at_pickup: ["I'm at the pickup now.", "I'm here. Please come out.", "I'm waiting by the gate."],
   on_trip: ["No problem.", "Okay.", "We're close."],
   payment: ["Thank you!", "Okay, thank you.", "No wahala."],
+};
+const RECIPIENT_REPLIES: Record<string, string[]> = {
+  to_pickup: ["I'm picking it up now, then coming to you.", "I'll call you when I'm close."],
+  at_pickup: ["I have the package. Coming to you now.", "Collected. On my way."],
+  on_trip: ["I'm on my way to you.", "I go reach you soon. Please be ready to collect.", "Traffic small, but I'm close."],
+  payment: ["Delivered. Thank you!"],
 };
 const CUSTOMER_REPLIES: Record<string, string[]> = {
   to_pickup: ["Okay, I'm waiting.", "Please call when you're close.", "Thank you."],
@@ -128,11 +148,18 @@ function chatReplies(now: number) {
   const s = useStore.getState();
   const live = (t: Trip) => t.stage !== "completed" && t.stage !== "cancelled";
   for (const t of s.trips) {
-    if (!live(t) || (t.driverSource === "me") === (t.customerSource === "me")) continue;
-    const mine = t.customerSource === "me" ? "customer" : "driver";
+    if (!live(t)) continue;
     const thread = s.messages.filter((m) => m.tripId === t.id);
     const last = thread[thread.length - 1];
-    if (!last || last.from !== mine || now - last.createdAt < 2500) continue;
+    if (!last || now - last.createdAt < 2500) continue;
+    // The receiver of a delivery chats from the tracking link; a bot rider answers them.
+    if (last.from === "recipient") {
+      if (t.driverSource === "bot") s.sendMessage(t.id, "driver", pick(RECIPIENT_REPLIES[t.stage] ?? ["Okay."]));
+      continue;
+    }
+    if ((t.driverSource === "me") === (t.customerSource === "me")) continue;
+    const mine = t.customerSource === "me" ? "customer" : "driver";
+    if (last.from !== mine) continue;
     const pool = (mine === "customer" ? DRIVER_REPLIES : CUSTOMER_REPLIES)[t.stage] ?? ["Okay."];
     s.sendMessage(t.id, mine === "customer" ? "driver" : "customer", pick(pool));
   }
@@ -149,9 +176,11 @@ function spawnRequests(now: number) {
   if (s.requests.filter((r) => r.source === "bot" && r.status === "open" && r.mode === mode).length >= 2) return;
   const a = pick(PLACES);
   let b = pick(PLACES);
-  while (b.id === a.id || roadKm(a, b) < 3) b = pick(PLACES);
-  const km = roadKm(a, b);
-  const offer = Math.max(500, round100((mode === "ride" ? 600 + km * 150 : 450 + km * 95) * rand(0.8, 1.12)));
+  while (b.id === a.id || knownRoute(a, b).km < 3) b = pick(PLACES);
+  requestRoute(a, b);
+  // Customers offer around the recommended fare: some a bit under, some a bit over.
+  const fair = quoteFor(a, b, mode, now, s.settings).recommended;
+  const offer = Math.max(s.settings.minOffer, round100(fair * rand(0.85, 1.08)));
   useStore.getState().addRequest({
     id: uid(),
     source: "bot",

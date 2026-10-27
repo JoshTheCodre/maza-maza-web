@@ -9,7 +9,9 @@ import type { ReportKind, Side } from "@/lib/types";
 
 const FAQ: Record<Side, [string, string][]> = {
   customer: [
-    ["Who decides the fare?", "You and the driver. You make an offer, drivers nearby accept it or counter, and you choose. Maza-Maza doesn't set or suggest fares."],
+    ["Who decides the fare?", "You and the driver. You make an offer, drivers nearby accept it or counter, and you choose. We show a recommended fare as a guide, worked out from the road distance, fuel price, time in traffic and the hour, but you can offer any price."],
+    ["What's a next-job price?", "A dispatch rider who's a few minutes from finishing another delivery nearby can take yours next. You wait a little longer and pay 10% less than the price you agreed."],
+    ["Can the receiver track my package?", "Yes. On the delivery screen, tap Send to receiver. They get a link showing where the rider is and when it arrives, and a group chat with you and the rider."],
     ["What if nobody accepts my offer?", "You'll usually get counter-offers. Accept one, or raise your offer so drivers who passed see the new price."],
     ["How do I pay?", "Pay the driver directly at the end of the trip, in cash or by bank transfer to the account shown in the app. Maza-Maza takes nothing from the fare."],
     ["The driver asked for more money", "You only pay the fare you agreed. Don't pay more. Report it from the trip screen and our safety team will follow up."],
@@ -19,6 +21,7 @@ const FAQ: Record<Side, [string, string][]> = {
   driver: [
     ["How does the day ticket work?", "Buy it on any day you want to work. It makes you visible to customers until 23:59 that night. No ticket means you're offline and pay nothing."],
     ["Do you take commission?", "No. You keep the full fare of every trip. The day ticket is the only fee."],
+    ["What's a next job?", "When you're a few minutes from dropping off a package, customers near you can book you for your next delivery. They pay 10% less, and you go straight to the next pickup instead of waiting."],
     ["How do customers pay me?", "Directly, in cash or by transfer to the bank account in Account → Bank account. Confirm the payment before you end the trip."],
     ["A customer didn't show up", "Wait at the pickup. After 5 minutes you can cancel with No-show from the trip screen."],
     ["My wallet top-up didn't arrive", "Card and USSD top-ups arrive straight away. Bank transfers can take a few minutes. If it's been longer, send us a message below with the time and amount."],

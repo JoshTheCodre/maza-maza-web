@@ -1,3 +1,4 @@
+import { DEFAULT_FARE } from "./pricing";
 import type { Mode, Settings, VehicleType } from "./types";
 
 /** Platform defaults. Admins change these in Admin → Settings. */
@@ -7,6 +8,7 @@ export const DEFAULT_SETTINGS: Settings = {
   minOffer: 300,
   raiseStep: 200,
   requestTtlMin: 5,
+  fare: DEFAULT_FARE,
 };
 
 export const MIN_TOP_UP = 1000;

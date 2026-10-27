@@ -13,9 +13,11 @@ import { Avatar, LockedFare, Plate, RouteDots, Stars } from "@/components/ui/dis
 import { MapView } from "@/components/map/map-view";
 import { useNow } from "@/hooks/use-now";
 import { CUSTOMER_CANCEL_REASONS, RATING_TAGS } from "@/lib/config";
-import { place, roadKm } from "@/lib/data/places";
+import { place } from "@/lib/data/places";
+import { tripTimes } from "@/lib/eta";
 import { capitalise, clock, dayLabel, firstName, naira } from "@/lib/format";
 import { vehiclePosition } from "@/lib/geo";
+import { knownRoute, useRoute } from "@/lib/routing";
 import { useStore } from "@/lib/store";
 import { toast } from "@/lib/toasts";
 import type { PayMethod, Trip } from "@/lib/types";
@@ -48,23 +50,26 @@ function LiveView({ trip }: { trip: Trip }) {
   const name = firstName(trip.driver.name);
   const send = trip.mode === "send";
   const live = trip.driverSource === "me";
-  const el = (now - trip.stageAt) / 1000;
-  const eta = Math.max(1, Math.round(trip.etaMin * (1 - Math.min(1, el / 9))));
-  const rideLeft = Math.max(1, Math.round(roadKm(a, b) * 2.6 * (1 - Math.min(1, el / 12))));
+  const route = useRoute(a, b);
+  const times = tripTimes(trip, route ?? knownRoute(a, b), now);
   const copy = {
-    to_pickup: [`${name} is on the way`, `About ${eta} min away · ${capitalise(trip.driver.vehicle.description)}`],
+    to_pickup: [
+      `${name} is on the way`,
+      `${trip.nextJob ? "Finishing a delivery nearby, then about" : "About"} ${times.toPickup} min away · ${capitalise(trip.driver.vehicle.description)}`,
+    ],
     at_pickup: [`${name} has arrived`, send ? `Hand over the ${(trip.notes[0] ?? "parcel").toLowerCase()} at ${a.name}. Check the plate first.` : `Meet at ${a.name}. Check the plate before you get in.`],
-    on_trip: [send ? "Your delivery is on the way" : `On the way to ${b.name}`, `Arriving in about ${rideLeft} min`],
+    on_trip: [send ? "Your delivery is on the way" : `On the way to ${b.name}`, `Arrives about ${clock(times.arriveAt)} · ${times.leftToDrop} min left`],
   }[trip.stage as "to_pickup" | "at_pickup" | "on_trip"];
   const step = ["to_pickup", "at_pickup", "on_trip"].indexOf(trip.stage);
   const canCancel = trip.stage === "to_pickup" || trip.stage === "at_pickup";
 
   return (
-    <MapLayout map={<MapView pickup={a} drop={b} vehicle={vehiclePosition(trip.stage, trip.stageAt, now, a, b, live)} />}>
+    <MapLayout map={<MapView pickup={a} drop={b} vehicle={vehiclePosition(trip.stage, trip.stageAt, now, a, b, live, route?.road ? route.path : undefined)} />}>
       <Panel>
         <div className="grid gap-1">
           <h1 className="font-display text-[1.12rem] leading-tight font-bold tracking-tight">{copy[0]}</h1>
           <p className="text-[0.8rem] text-muted">{copy[1]}</p>
+          {trip.stage !== "on_trip" && <p className="text-[0.8rem] font-semibold">{send ? "Delivered" : "At the drop-off"} about {clock(times.arriveAt)}</p>}
           <div className="mt-2 grid grid-cols-3 gap-1" aria-hidden>
             {[0, 1, 2].map((i) => (
               <i key={i} className={`h-1 rounded ${i <= step ? "bg-brand" : "bg-line"}`} />
@@ -82,6 +87,11 @@ function LiveView({ trip }: { trip: Trip }) {
           <Plate>{trip.driver.vehicle.plate}</Plate>
         </div>
         <LockedFare price={trip.price} payMethod={trip.payMethod} />
+        {trip.nextJob && (
+          <p className="rounded-xl bg-danfo-soft px-3 py-2 text-[0.82rem]">
+            <b>Next-job price.</b> {name} is finishing a delivery nearby, so you pay {naira(trip.price)} instead of {naira(trip.nextJob.fullPrice)}.
+          </p>
+        )}
         <div className="grid grid-cols-3 gap-2">
           <ChatButton trip={trip} me="customer" href={`/ride/trip/${trip.id}/chat`} />
           <ShareTripButton trip={trip} />
@@ -215,7 +225,7 @@ function RateView({ trip }: { trip: Trip }) {
 function Receipt({ trip }: { trip: Trip }) {
   return (
     <>
-      <RouteDots from={place(trip.pickupId).name} to={place(trip.dropId).name} meta={`${roadKm(place(trip.pickupId), place(trip.dropId))} km · ${trip.mode === "ride" ? "Ride" : "Delivery"}`} />
+      <RouteDots from={place(trip.pickupId).name} to={place(trip.dropId).name} meta={`${knownRoute(place(trip.pickupId), place(trip.dropId)).km} km · ${trip.mode === "ride" ? "Ride" : "Delivery"}`} />
       <dl className="divide-y divide-line rounded-2xl border-[1.5px] border-line">
         {[
           ["Agreed fare", naira(trip.price)],

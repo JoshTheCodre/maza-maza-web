@@ -4,7 +4,8 @@ import Link from "next/link";
 import { AdminPage, Stat } from "@/components/admin/admin-shell";
 import { MapView } from "@/components/map/map-view";
 import { useNow } from "@/hooks/use-now";
-import { place } from "@/lib/data/places";
+import { CITY } from "@/lib/city";
+import { DEFAULT_PICKUP, place } from "@/lib/data/places";
 import { clock, lagosDate, naira, plainNumber, relativeTime } from "@/lib/format";
 import { driverCanReceive, useStore } from "@/lib/store";
 
@@ -30,7 +31,7 @@ export default function AdminOverview() {
     .slice(0, 8);
 
   return (
-    <AdminPage title="Overview" sub={`Lagos · today · updated ${clock(now)}`}>
+    <AdminPage title="Overview" sub={`${CITY.name} · today · updated ${clock(now)}`}>
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Drivers online" value={plainNumber(driverCanReceive(s, now) ? 1 : 0)} note="With today's ticket" />
         <Stat label="Day tickets sold" value={plainNumber(ticketsToday.length)} note="Today" />
@@ -55,7 +56,7 @@ export default function AdminOverview() {
         <section className="grid gap-2">
           <h2 className="font-bold">Live now</h2>
           <div className="relative h-[320px] overflow-hidden rounded-2xl border-[1.5px] border-line">
-            <MapView pickup={place("yaba")} others={[...openReq.map((r) => place(r.pickupId)), ...liveTrips.map((t) => place(t.dropId))]} minWidth={330} />
+            <MapView pickup={place(DEFAULT_PICKUP)} others={[...openReq.map((r) => place(r.pickupId)), ...liveTrips.map((t) => place(t.dropId))]} minWidth={330} />
           </div>
           <p className="text-[0.8rem] text-muted">
             {openReq.length} open {openReq.length === 1 ? "request" : "requests"} · {liveTrips.length} {liveTrips.length === 1 ? "trip" : "trips"} in progress

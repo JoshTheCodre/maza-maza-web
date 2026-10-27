@@ -4,12 +4,15 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Chip, NairaStepper } from "@/components/ui/controls";
 import { Avatar, Pill, RouteDots, Stars } from "@/components/ui/display";
-import { place, roadKm } from "@/lib/data/places";
+import { useQuote } from "@/hooks/use-quote";
+import { place } from "@/lib/data/places";
 import { firstName, naira } from "@/lib/format";
+import { fareSettings, minutesAway, nextJobPrice } from "@/lib/pricing";
 import { myBidFor, useStore } from "@/lib/store";
 import type { RideRequest } from "@/lib/types";
 
-export function FeedCard({ req, now }: { req: RideRequest; now: number }) {
+/** One customer request in the driver's feed. As a `nextJob`, the customer pays less and the rider takes it after their drop-off. */
+export function FeedCard({ req, now, nextJob }: { req: RideRequest; now: number; nextJob?: { freeInMin: number } }) {
   const s = useStore();
   const [countering, setCountering] = useState(false);
   const [amount, setAmount] = useState(req.offer + 500);
@@ -18,6 +21,9 @@ export function FeedCard({ req, now }: { req: RideRequest; now: number }) {
   const b = place(req.dropId);
   const name = firstName(req.customer.name);
   const raised = req.offer > req.firstOffer;
+  const q = useQuote(a, b, req.mode);
+  const fare = fareSettings(s.settings);
+  const youGet = (n: number) => (nextJob ? nextJobPrice(n, fare) : n);
 
   let state: { tone: "wait" | "lost"; text: string } | null = null;
   if (bid?.status === "active") state = { tone: "wait", text: bid.kind === "accept" ? `You accepted ${naira(bid.amount)}. Waiting for ${name} to choose…` : `You countered ${naira(bid.amount)}. Waiting for ${name}…` };
@@ -35,15 +41,21 @@ export function FeedCard({ req, now }: { req: RideRequest; now: number }) {
             {req.customer.short} <Stars rating={req.customer.rating} />
           </p>
           <p className="text-[0.74rem] text-muted">
-            {req.kmToPickup} km to pickup · pays by {req.payMethod}
+            {req.kmToPickup} km to pickup · {(nextJob?.freeInMin ?? 0) + minutesAway(req.kmToPickup, req.mode, now)} min away · pays by {req.payMethod}
           </p>
         </div>
         <div className="grid justify-items-end gap-1">
           <b className="tabular font-display text-[1.2rem] font-bold tracking-tight">{naira(req.offer)}</b>
           {raised && <Pill tone="accept">Raised</Pill>}
+          {q && !raised && <small className="text-[0.7rem] text-muted">fair {naira(q.quote.recommended)}</small>}
         </div>
       </div>
-      <RouteDots from={a.name} to={b.name} meta={[`${roadKm(a, b)} km trip`, req.parcel, ...req.notes].filter(Boolean).join(" · ")} />
+      <RouteDots from={a.name} to={b.name} meta={[q ? `${q.trip.km} km · ${q.trip.minutes} min trip` : "", req.parcel, ...req.notes].filter(Boolean).join(" · ")} />
+      {nextJob && !bid && req.status === "open" && (
+        <p className="rounded-xl bg-danfo-soft px-3 py-2 text-[0.8rem]">
+          <b>Next job.</b> You&apos;re about {nextJob.freeInMin} min from your drop-off, so {name} pays {fare.nextJobPct}% less: you&apos;d get {naira(youGet(req.offer))}.
+        </p>
+      )}
       {!bid && req.status === "open" && !countering && (
         <div className="h-[3px] overflow-hidden rounded bg-line" aria-hidden>
           <i className="block h-full bg-brand transition-[width] duration-1000 ease-linear" style={{ width: `${leftPct}%` }} />
@@ -65,7 +77,7 @@ export function FeedCard({ req, now }: { req: RideRequest; now: number }) {
             Counter
           </Button>
           <Button size="sm" onClick={() => s.placeBid(req.id, "accept", req.offer)}>
-            Accept {naira(req.offer)}
+            Accept {naira(youGet(req.offer))}
           </Button>
         </div>
       )}

@@ -17,7 +17,7 @@ export function HowItWorks() {
         </div>
         <Reveal className="haggle" label="A bargain between a customer and a driver">
           <p className="bubble b-you">
-            Yaba to Lekki? <span className="amt">₦2,500</span>
+            Choba to GRA? <span className="amt">₦2,500</span>
           </p>
           <p className="bubble b-drv">
             Go-slow dey. <span className="amt">₦3,200</span>

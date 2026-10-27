@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Page, PageHeader } from "@/components/app/layout-parts";
 import { Dot } from "@/components/ui/display";
-import { nearestPlace, place, roadKm, searchPlaces } from "@/lib/data/places";
+import { place, searchPlaces } from "@/lib/data/places";
+import { locationProblem, pickupHere } from "@/lib/location";
+import { CITY } from "@/lib/city";
+import { knownRoute } from "@/lib/routing";
 import { useStore } from "@/lib/store";
 import { toast } from "@/lib/toasts";
 import type { Mode } from "@/lib/types";
@@ -24,22 +27,16 @@ export default function PlaceSearch() {
     if (m === "ride" || m === "send") setDraft({ mode: m as Mode, notes: [], editing: "drop" });
   }, [setDraft]);
 
-  const useMyLocation = () => {
-    if (!navigator.geolocation) return toast("customer", "Your browser can't share location. Search for your pickup instead.");
+  const locateMe = () => {
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocating(false);
-        const p = nearestPlace(pos.coords.latitude, pos.coords.longitude);
-        toast("customer", `Pickup set to ${p.name}, the closest place we know.`);
+    pickupHere()
+      .then((p) => {
+        s.addPlace(p);
+        toast("customer", `Pickup set to ${p.name}.`);
         pick(p.id);
-      },
-      () => {
-        setLocating(false);
-        toast("customer", "We couldn't get your location. Search for your pickup instead.");
-      },
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
+      })
+      .catch((e: Error) => toast("customer", locationProblem(e.message)))
+      .finally(() => setLocating(false));
   };
   const editing = d.editing;
   const pickup = place(d.pickupId);
@@ -72,7 +69,7 @@ export default function PlaceSearch() {
               autoComplete="off"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={which === "pickup" ? "Search pickup" : "Search places in Lagos"}
+              placeholder={which === "pickup" ? "Search pickup" : `Search places in ${CITY.name}`}
               className="block w-full border-0 bg-transparent p-0 font-semibold outline-none"
             />
           ) : (
@@ -110,7 +107,7 @@ export default function PlaceSearch() {
       {editing === "pickup" && (
         <button
           type="button"
-          onClick={useMyLocation}
+          onClick={locateMe}
           disabled={locating}
           className="flex items-center gap-3 rounded-2xl border-[1.5px] border-line px-3 py-2.5 text-left font-semibold hover:border-ink disabled:opacity-60"
         >
@@ -128,7 +125,7 @@ export default function PlaceSearch() {
                 <b className="block text-[0.92rem] font-semibold">{p.name}</b>
                 <small className="block text-[0.74rem] text-muted">
                   {p.area}
-                  {editing === "drop" ? ` · ${roadKm(pickup, p)} km away` : ""}
+                  {editing === "drop" ? ` · ${knownRoute(pickup, p).km} km away` : ""}
                 </small>
               </span>
             </button>

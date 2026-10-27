@@ -6,14 +6,20 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { DEFAULT_SETTINGS, MODE_FOR_VEHICLE } from "./config";
-import { place, roadKm } from "./data/places";
+import { CITY } from "./city";
+import { DEFAULT_PICKUP, place, registerPlace } from "./data/places";
 import { shortName } from "./data/people";
 import { daysAgo, firstName, lagosDate, naira } from "./format";
+import { tripTimes } from "./eta";
+import { fareSettings, minutesAway, nextJobPrice } from "./pricing";
+import { quoteFor } from "./quotes";
+import { knownRoute } from "./routing";
 import { toast } from "./toasts";
 import type {
   AppNotification,
   Bid,
   BidKind,
+  ChatFrom,
   ChatMessage,
   DayTicket,
   DriverApplication,
@@ -25,6 +31,7 @@ import type {
   PayMethod,
   Payout,
   Person,
+  Place,
   Report,
   ReportKind,
   RideRequest,
@@ -37,7 +44,8 @@ import type {
   WalletEntry,
 } from "./types";
 
-export const STORAGE_KEY = "maza-maza-v2";
+// v3: the launch city moved to Port Harcourt, so older Lagos demo data starts fresh.
+export const STORAGE_KEY = "maza-maza-v3";
 
 export const uid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -96,6 +104,8 @@ export interface AppData {
   reports: Report[];
   settings: Settings;
   suspended: string[];
+  /** Places found at run time (GPS pickups), so trips that used them still show where they were. */
+  customPlaces: Place[];
 }
 
 interface ApplicationInput {
@@ -116,6 +126,7 @@ interface Actions {
   markFaceVerified: () => void;
   signOut: () => void;
   setProfile: (p: { name: string; email?: string }) => void;
+  addPlace: (p: Place) => void;
   setLocationAsked: () => void;
   // customer
   setDraft: (patch: Partial<Draft>) => void;
@@ -128,7 +139,7 @@ interface Actions {
   customerPay: (tripId: string, method: PayMethod) => void;
   rateTrip: (tripId: string, stars: number, tags: string[]) => void;
   cancelTrip: (tripId: string, by: Side, reason: string) => void;
-  sendMessage: (tripId: string, from: Side, body: string) => void;
+  sendMessage: (tripId: string, from: ChatFrom, body: string) => void;
   report: (kind: ReportKind, message: string, from: Side, tripId?: string) => void;
   addContact: (name: string, phone: string) => void;
   removeContact: (id: string) => void;
@@ -166,7 +177,7 @@ const NEW_DRIVER: DriverPublic = { id: "drv-me", name: "", short: "", rating: 5,
 function initialData(now = Date.now()): AppData {
   const at = (days: number, h: number, m = 0) => {
     const dt = new Date(daysAgo(days, now));
-    dt.setUTCHours(h - 1, m, 0, 0); // Lagos is UTC+1
+    dt.setUTCHours(h - 1, m, 0, 0); // Nigeria is UTC+1
     return dt.getTime();
   };
   return {
@@ -176,7 +187,7 @@ function initialData(now = Date.now()): AppData {
       profile: { id: "cust-me", name: "", short: "", rating: 5 },
       email: "",
       phone: "",
-      draft: { editing: "drop", mode: "ride", pickupId: "yaba", dropId: null, offer: 0, payMethod: "cash", notes: [], parcel: "Small parcel", receiver: "" },
+      draft: { editing: "drop", mode: "ride", pickupId: DEFAULT_PICKUP, dropId: null, offer: 0, payMethod: "cash", notes: [], parcel: "Small parcel", receiver: "" },
       savedPlaces: [],
       contacts: [],
       lastOffers: {},
@@ -188,11 +199,11 @@ function initialData(now = Date.now()): AppData {
     messages: [],
     notifications: [],
     applications: [
-      app("a-1", "Yusuf Adamu", "+234 806 000 2231", "bike", "Bajaj Boxer", "KJA 119 QB", at(0, 8, 14), "pending", ["uploaded", "uploaded", "uploaded", "uploaded", "uploaded"]),
-      app("a-2", "Grace Okoro", "+234 809 000 7702", "car", "white Toyota Corolla 2012", "LSR 734 BC", at(0, 7, 2), "pending", ["verified", "uploaded", "uploaded", "uploaded", "uploaded"]),
-      app("a-3", "Peter Ekanem", "+234 812 000 4459", "car", "grey Honda Civic 2010", "EPE 221 KD", at(1, 16, 40), "pending", ["uploaded", "uploaded", "missing", "uploaded", "uploaded"]),
-      app("a-4", "Kemi Alade", "+234 803 000 9915", "car", "black Toyota Camry 2014", "AGL 508 FA", at(2, 11, 5), "approved", ["verified", "verified", "verified", "verified", "verified"]),
-      app("a-5", "Uche Obi", "+234 805 000 3380", "bike", "TVS Apache", "MUS 640 XA", at(3, 14, 22), "rejected", ["verified", "rejected", "uploaded", "verified", "uploaded"], "Licence photo is blurred. Ask for a clear photo."),
+      app("a-1", "Yusuf Adamu", "+234 806 000 2231", "bike", "Bajaj Boxer", "PHC 119 QB", at(0, 8, 14), "pending", ["uploaded", "uploaded", "uploaded", "uploaded", "uploaded"]),
+      app("a-2", "Grace Okoro", "+234 809 000 7702", "car", "white Toyota Corolla 2012", "PHC 734 BC", at(0, 7, 2), "pending", ["verified", "uploaded", "uploaded", "uploaded", "uploaded"]),
+      app("a-3", "Peter Ekanem", "+234 812 000 4459", "car", "grey Honda Civic 2010", "PHC 221 KD", at(1, 16, 40), "pending", ["uploaded", "uploaded", "missing", "uploaded", "uploaded"]),
+      app("a-4", "Kemi Alade", "+234 803 000 9915", "car", "black Toyota Camry 2014", "PHC 508 FA", at(2, 11, 5), "approved", ["verified", "verified", "verified", "verified", "verified"]),
+      app("a-5", "Uche Obi", "+234 805 000 3380", "bike", "TVS Apache", "PHC 640 XA", at(3, 14, 22), "rejected", ["verified", "rejected", "uploaded", "verified", "uploaded"], "Licence photo is blurred. Ask for a clear photo."),
     ],
     reports: [
       { id: "r-1", kind: "overcharge", tripId: "t-x1", from: "Tolu A. (customer)", against: "Driver KTU 388 BD", message: "Driver asked for ₦500 more at the drop-off because of traffic. We agreed ₦2,400.", createdAt: at(0, 9, 12), status: "open" },
@@ -201,6 +212,7 @@ function initialData(now = Date.now()): AppData {
     ],
     settings: DEFAULT_SETTINGS,
     suspended: [],
+    customPlaces: [],
   };
 }
 
@@ -227,7 +239,7 @@ function app(
     id,
     name,
     phone,
-    city: "Lagos",
+    city: CITY.name,
     vehicleType,
     vehicle,
     plate,
@@ -251,8 +263,26 @@ export const todayTicket = (s: AppData, now = Date.now()) =>
 
 export const driverMode = (s: AppData): Mode => MODE_FOR_VEHICLE[s.driver.profile.vehicle.type];
 
-export const activeDriverTrip = (s: AppData) =>
-  s.trips.find((t) => t.driverSource === "me" && t.stage !== "completed" && t.stage !== "cancelled") ?? null;
+const liveDriverTrips = (s: AppData) =>
+  s.trips.filter((t) => t.driverSource === "me" && t.stage !== "completed" && t.stage !== "cancelled").sort((a, b) => a.createdAt - b.createdAt);
+
+/** The trip the driver is on now. A next job booked while finishing it waits behind it. */
+export const activeDriverTrip = (s: AppData) => liveDriverTrips(s)[0] ?? null;
+
+/** The next job lined up behind the current trip, if any. */
+export const queuedDriverTrip = (s: AppData) => liveDriverTrips(s)[1] ?? null;
+
+/**
+ * Minutes left to the drop-off when a dispatch rider is close enough to take a next job, otherwise null.
+ * Only one job can wait in line.
+ */
+export const nextJobWindow = (s: AppData, now = Date.now()) => {
+  const live = liveDriverTrips(s);
+  const t = live[0];
+  if (live.length !== 1 || t.mode !== "send" || t.stage !== "on_trip") return null;
+  const left = tripTimes(t, knownRoute(place(t.pickupId), place(t.dropId)), now).leftToDrop;
+  return left <= fareSettings(s.settings).nextJobWindowMin ? left : null;
+};
 
 /** The customer's trip that still needs them: riding, paying or rating. */
 export const activeCustomerTrip = (s: AppData) =>
@@ -261,7 +291,7 @@ export const activeCustomerTrip = (s: AppData) =>
 export const openCustomerRequest = (s: AppData) => s.requests.find((r) => r.source === "me" && r.status === "open") ?? null;
 
 export const driverCanReceive = (s: AppData, now = Date.now()) =>
-  s.driver.status === "approved" && s.driver.online && !!todayTicket(s, now) && !activeDriverTrip(s);
+  s.driver.status === "approved" && s.driver.online && !!todayTicket(s, now) && (!activeDriverTrip(s) || nextJobWindow(s, now) !== null);
 
 export const myBidFor = (s: AppData, requestId: string) =>
   s.bids.find((b) => b.requestId === requestId && b.source === "me") ?? null;
@@ -311,7 +341,11 @@ export const useStore = create<Store>()(
 
       const finishIfSettled = (id: string) => {
         const t = get().trips.find((x) => x.id === id);
-        if (t && t.stage === "payment" && t.customerPaid && t.driverConfirmedPaid) patchTrip(id, { stage: "completed", stageAt: Date.now() });
+        if (!t || t.stage !== "payment" || !t.customerPaid || !t.driverConfirmedPaid) return;
+        patchTrip(id, { stage: "completed", stageAt: Date.now() });
+        // A next job waiting behind this trip starts its drive to the pickup now.
+        const next = get().trips.find((x) => x.nextJob && x.driver.id === t.driver.id && x.stage === "to_pickup" && x.createdAt > t.createdAt);
+        if (next) patchTrip(next.id, { stageAt: Date.now() });
       };
 
       return {
@@ -323,6 +357,10 @@ export const useStore = create<Store>()(
             customer: { ...s.customer, authMethod: via.method, phone: via.method === "phone" ? via.phone : s.customer.phone },
           })),
         addPhone: (phone) => set((s) => ({ customer: { ...s.customer, phone } })),
+        addPlace: (p) => {
+          registerPlace(p);
+          set((s) => ({ customPlaces: [p, ...s.customPlaces.filter((x) => x.id !== p.id)].slice(0, 30) }));
+        },
         markFaceVerified: () => set((s) => ({ customer: { ...s.customer, faceVerifiedAt: Date.now() } })),
         signOut: () => set((s) => ({ signedIn: false, driver: { ...s.driver, online: false } })),
         setProfile: ({ name, email }) =>
@@ -337,7 +375,8 @@ export const useStore = create<Store>()(
             toast("customer", "Pick a drop-off that's different from your pickup.");
             return false;
           }
-          get().setDraft({ dropId: placeId, offer: lastOffers[offerKey(draft.pickupId, placeId)] ?? 0 });
+          const recommended = quoteFor(place(draft.pickupId), place(placeId), draft.mode, Date.now(), get().settings).recommended;
+          get().setDraft({ dropId: placeId, offer: lastOffers[offerKey(draft.pickupId, placeId)] ?? recommended });
           return true;
         },
 
@@ -395,8 +434,10 @@ export const useStore = create<Store>()(
           const bid = s.bids.find((b) => b.id === bidId);
           const req = bid && s.requests.find((r) => r.id === bid.requestId);
           if (!bid || !req || req.status !== "open" || bid.status !== "active") return null;
-          if (bid.source === "me" && activeDriverTrip(s)) return null;
+          // A driver already on a trip can only be booked for one next job.
+          if (bid.source === "me" && activeDriverTrip(s) && (!bid.nextJob || queuedDriverTrip(s))) return null;
           const now = Date.now();
+          const fare = fareSettings(s.settings);
           const trip: Trip = {
             id: uid(),
             requestId: req.id,
@@ -407,7 +448,9 @@ export const useStore = create<Store>()(
             driverSource: bid.source,
             pickupId: req.pickupId,
             dropId: req.dropId,
-            price: bid.amount,
+            price: bid.nextJob ? nextJobPrice(bid.amount, fare) : bid.amount,
+            nextJob: bid.nextJob ? { ...bid.nextJob, fullPrice: bid.amount } : undefined,
+            receiver: req.mode === "send" ? req.receiver : undefined,
             payMethod: req.payMethod,
             notes: [req.parcel, ...req.notes].filter(Boolean) as string[],
             stage: "to_pickup",
@@ -423,7 +466,14 @@ export const useStore = create<Store>()(
             bids: s.bids.map((b) => (b.requestId === req.id ? { ...b, status: b.id === bidId ? "won" : b.status === "active" ? "lost" : b.status } : b)),
             customer: req.source === "me" ? { ...s.customer, lastOffers: { ...s.customer.lastOffers, [offerKey(req.pickupId, req.dropId)]: req.offer } } : s.customer,
           });
-          if (bid.source === "me") notify("driver", `${firstName(req.customer.name)} chose you at ${naira(bid.amount)}. Head to pickup.`, `/driver/trip/${trip.id}`);
+          if (bid.source === "me")
+            notify(
+              "driver",
+              bid.nextJob
+                ? `${firstName(req.customer.name)} booked you as your next job at ${naira(trip.price)}. Pick up after this drop-off.`
+                : `${firstName(req.customer.name)} chose you at ${naira(bid.amount)}. Head to pickup.`,
+              `/driver/trip/${trip.id}`,
+            );
           return trip.id;
         },
 
@@ -570,7 +620,8 @@ export const useStore = create<Store>()(
             driver: s.driver.profile,
             kind,
             amount: kind === "accept" ? req.offer : amount,
-            etaMin: Math.max(2, Math.round(req.kmToPickup * 2.5)),
+            etaMin: (nextJobWindow(s) ?? 0) + minutesAway(req.kmToPickup, req.mode, Date.now()),
+            nextJob: activeDriverTrip(s) ? { freeInMin: nextJobWindow(s) ?? 0 } : undefined,
             status: "active",
             createdAt: Date.now(),
           };
@@ -644,9 +695,10 @@ export const useStore = create<Store>()(
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
       version: 2,
+      onRehydrateStorage: () => (state) => state?.customPlaces?.forEach(registerPlace),
     },
   ),
 );
 
 export const placeName = (id: string) => place(id).name;
-export const tripKm = (t: { pickupId: string; dropId: string }) => roadKm(place(t.pickupId), place(t.dropId));
+export const tripKm = (t: { pickupId: string; dropId: string }) => knownRoute(place(t.pickupId), place(t.dropId)).km;

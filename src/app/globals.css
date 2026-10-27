@@ -245,6 +245,38 @@ body {
   to { transform: scale(1.4); opacity: 0; }
 }
 
+/* Pins on the real map, matching the drawn map: pickup black, drop-off chartreuse, driver black with a chartreuse ring */
+.mz-pin { position: relative; border-radius: 50%; box-shadow: 0 1px 4px rgb(0 0 0 / 0.35); }
+.mz-pin-pickup { width: 20px; height: 20px; background: var(--ink); border: 3.5px solid var(--surface); }
+.mz-pin-drop { width: 18px; height: 18px; border-radius: 5px; background: var(--danfo); border: 3.5px solid var(--ink); }
+.mz-pin-vehicle { width: 26px; height: 26px; background: var(--ink); border: 4.5px solid var(--danfo); z-index: 2; }
+.mz-pin-other { width: 14px; height: 14px; background: var(--surface); border: 2.5px solid var(--ink); }
+/* "You are here": the familiar blue dot, with a slow pulse */
+.mz-pin-me { width: 18px; height: 18px; background: #2f7cf6; border: 3px solid #ffffff; z-index: 3; }
+.mz-pin-me::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 50%;
+  background: #2f7cf6;
+  animation: mzpin 2.4s ease-out infinite;
+}
+.mz-pin-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--ink);
+  animation: mzpin 1.8s ease-out infinite;
+}
+@keyframes mzpin {
+  from { transform: scale(1); opacity: 0.45; }
+  to { transform: scale(3.2); opacity: 0; }
+}
+.maplibregl-ctrl-attrib { font-family: var(--font-sans); font-size: 10px; }
+
 /* The notification bell swings once when something new arrives */
 .bell-swing {
   transform-origin: 50% 3px;
