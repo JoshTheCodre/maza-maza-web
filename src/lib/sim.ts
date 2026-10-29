@@ -7,6 +7,8 @@
 import { place, PLACES } from "./data/places";
 import { BOT_CUSTOMERS, BOT_DRIVERS } from "./data/people";
 import { minutesAway } from "./pricing";
+import { runReminders } from "./reminders";
+import { classOf } from "./ride-classes";
 import { quoteFor } from "./quotes";
 import { knownRoute, requestRoute } from "./routing";
 import { activeDriverTrip, driverCanReceive, driverMode, queuedDriverTrip, uid, useStore } from "./store";
@@ -34,13 +36,16 @@ let couldReceive = false;
 
 const TRIP_STEP_MS = { to_pickup: 9000, at_pickup: 6000, on_trip: 12000 } as const;
 
+/** Drivers who can take a request: the right vehicle and, for cars, the class the customer chose. */
+const poolFor = (r: RideRequest) => BOT_DRIVERS[r.mode === "ride" ? "car" : "bike"].filter((d) => r.mode !== "ride" || classOf(d.vehicle) === classOf(r));
+
 function planFor(r: RideRequest, now: number, bids: Bid[]): BotPlan[] {
-  const pool = BOT_DRIVERS[r.mode === "ride" ? "car" : "bike"];
+  const pool = poolFor(r);
   const order = pool.map((_, i) => i).sort(() => Math.random() - 0.5).slice(0, 4);
   // After a page reload the plan is rebuilt, so drivers who already replied stay replied.
   const already = new Set(bids.filter((b) => b.requestId === r.id && b.source === "bot").map((b) => b.driver.id));
   // Drivers weigh offers against the recommended fare, each with their own idea of what's fair.
-  const quote = quoteFor(place(r.pickupId), place(r.dropId), r.mode, now, useStore.getState().settings);
+  const quote = quoteFor(place(r.pickupId), place(r.dropId), r.mode, r.scheduledFor ?? now, useStore.getState().settings, r.rideClass);
   const p: BotPlan[] = order.map((driverIndex, i) => ({
     driverIndex,
     min: round50(quote.recommended * rand(0.88, 1.2)),
@@ -50,7 +55,7 @@ function planFor(r: RideRequest, now: number, bids: Bid[]): BotPlan[] {
     nextJob: r.mode === "send" && i === 1 && Math.random() < 0.7 ? { freeInMin: Math.round(rand(2, 5)) } : undefined,
   }));
   // A fair offer always finds someone.
-  if (!already.size && r.firstOffer >= quote.low && !p.some((b) => b.min <= r.firstOffer)) p[2].min = r.firstOffer;
+  if (p.length && !already.size && r.firstOffer >= quote.low && !p.some((b) => b.min <= r.firstOffer)) p[Math.min(2, p.length - 1)].min = r.firstOffer;
   return p;
 }
 
@@ -79,7 +84,7 @@ function driversReply(now: number) {
         continue;
       }
       b.replied = true;
-      const driver = BOT_DRIVERS[r.mode === "ride" ? "car" : "bike"][b.driverIndex];
+      const driver = poolFor(r)[b.driverIndex];
       if (useStore.getState().bids.some((x) => x.requestId === r.id && x.driver.id === driver.id)) continue;
       useStore.getState().addBid({
         id: uid(),
@@ -178,8 +183,12 @@ function spawnRequests(now: number) {
   let b = pick(PLACES);
   while (b.id === a.id || knownRoute(a, b).km < 3) b = pick(PLACES);
   requestRoute(a, b);
+  // Car requests are for the driver's class. About a quarter are booked ahead, airport trips more often.
+  const rideClass = mode === "ride" ? classOf(s.driver.profile.vehicle) : undefined;
+  const airport = a.id === "airport" || b.id === "airport";
+  const scheduledFor = mode === "ride" && Math.random() < (airport ? 0.6 : 0.25) ? Math.round((now + rand(40, 240) * 60_000) / 300_000) * 300_000 : undefined;
   // Customers offer around the recommended fare: some a bit under, some a bit over.
-  const fair = quoteFor(a, b, mode, now, s.settings).recommended;
+  const fair = quoteFor(a, b, mode, scheduledFor ?? now, s.settings, rideClass).recommended;
   const offer = Math.max(s.settings.minOffer, round100(fair * rand(0.85, 1.08)));
   useStore.getState().addRequest({
     id: uid(),
@@ -193,9 +202,12 @@ function spawnRequests(now: number) {
     payMethod: pick(["cash", "transfer"] as const),
     notes: mode === "ride" ? (Math.random() < 0.4 ? [pick(["AC please", "I have luggage"])] : []) : [],
     parcel: mode === "send" ? pick(["Documents", "Small parcel", "Food", "Medium box"]) : undefined,
+    rideClass,
+    scheduledFor,
+    flight: scheduledFor && b.id === "airport" ? { kind: "departure", number: `P4 ${Math.round(rand(7100, 7199))}`, time: scheduledFor + 150 * 60_000, international: false } : undefined,
     status: "open",
     createdAt: now,
-    expiresAt: now + 45_000,
+    expiresAt: now + (scheduledFor ? 90_000 : 45_000),
     kmToPickup: Math.round(rand(0.6, 3.4) * 10) / 10,
     reach: 0,
   });
@@ -209,6 +221,7 @@ function tick() {
   tripsMove(now);
   chatReplies(now);
   spawnRequests(now);
+  runReminders(now);
 }
 
 let running = false;

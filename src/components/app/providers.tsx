@@ -3,7 +3,7 @@
 import { WifiOff } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Logo } from "@/components/ui/display";
-import { resumeIfAllowed } from "@/lib/location";
+import { onFix, resumeIfAllowed, startWatching } from "@/lib/location";
 import { startSimulation } from "@/lib/sim";
 import { STORAGE_KEY, useStore } from "@/lib/store";
 
@@ -19,6 +19,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     window.addEventListener("storage", onStorage);
     resumeIfAllowed();
+    // While you're sharing your live location, each new position goes to the share (every few seconds at most).
+    const sharing = () => useStore.getState().liveShares.some((x) => !x.stopped && x.until > Date.now());
+    if (sharing()) startWatching();
+    let lastSent = 0;
+    const stopSharingUpdates = onFix((fix) => {
+      if (!sharing() || fix.at - lastSent < 5000) return;
+      lastSent = fix.at;
+      useStore.getState().updateLiveShares(fix);
+    });
     let stop = startSimulation();
     // A page parked in the back/forward cache must let go of the simulation, or the tab you're
     // actually looking at waits for it forever. Take it back if the page is restored.
@@ -33,6 +42,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("pagehide", onHide);
       window.removeEventListener("pageshow", onShow);
+      stopSharingUpdates();
       stop();
     };
   }, []);

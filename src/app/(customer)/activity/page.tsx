@@ -3,6 +3,7 @@
 import { Bike, Car, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { Page, PageHeader } from "@/components/app/layout-parts";
+import { UpcomingTrips } from "@/components/customer/booking-options";
 import { ResumeBanner } from "@/components/customer/parts";
 import { ButtonLink } from "@/components/ui/button";
 import { Pill } from "@/components/ui/display";
@@ -19,6 +20,7 @@ export default function ActivityPage() {
     <Page>
       <PageHeader title="Activity" />
       <ResumeBanner />
+      <UpcomingTrips />
       {trips.length ? (
         <>
           <p className="text-[0.88rem] text-muted">
@@ -34,16 +36,17 @@ export default function ActivityPage() {
                     <span className={`grid size-10 flex-none place-items-center rounded-xl ${cancelled ? "bg-surface-2 text-muted" : "bg-brand-soft text-brand-strong"}`}>
                       <Icon size={20} aria-hidden />
                     </span>
+                    {/* Destination first, like a receipt; the pickup is one tap away. */}
                     <span className="min-w-0 flex-1">
                       <b className="block truncate text-[0.92rem] font-semibold">
-                        {place(t.pickupId).name} → {place(t.dropId).name}
+                        {t.mode === "send" ? "Delivery to" : "To"} {place(t.dropId).name}
                       </b>
-                      <small className="block text-[0.76rem] text-muted">
+                      <small className="block truncate text-[0.76rem] text-muted">
                         {dayLabel(t.createdAt)}, {clock(t.createdAt)} · {t.driver.short}
                       </small>
                     </span>
-                    {cancelled ? <Pill tone="lost">Cancelled</Pill> : <span className="tabular font-mono text-[0.88rem] font-semibold">{naira(t.price)}</span>}
-                    <ChevronRight size={18} className="text-muted" aria-hidden />
+                    {cancelled ? <Pill tone="lost">Cancelled</Pill> : <span className="tabular flex-none text-[0.92rem] font-bold">{naira(t.price)}</span>}
+                    <ChevronRight size={18} className="flex-none text-muted" aria-hidden />
                   </Link>
                 </li>
               );

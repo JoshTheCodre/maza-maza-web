@@ -6,6 +6,7 @@ import { useState } from "react";
 import { writeSession } from "@/components/auth/auth-parts";
 import { VERIFY_RETURN_KEY } from "@/components/auth/onboarding";
 import { Page, PageHeader } from "@/components/app/layout-parts";
+import { LiveShareCard } from "@/components/app/live-share";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/controls";
 import { useStore } from "@/lib/store";
@@ -40,6 +41,7 @@ export default function SafetyPage() {
           </Link>
         )}
       </section>
+      <LiveShareCard />
       <section className="grid gap-2">
         <h2 className="font-bold">Emergency contacts</h2>
         <p className="text-[0.86rem] text-muted">They get your live location when you share a trip or press SOS.</p>

@@ -9,11 +9,13 @@ import { DEFAULT_SETTINGS, MODE_FOR_VEHICLE } from "./config";
 import { CITY } from "./city";
 import { DEFAULT_PICKUP, place, registerPlace } from "./data/places";
 import { shortName } from "./data/people";
-import { daysAgo, firstName, lagosDate, naira } from "./format";
+import { clock, dayLabel, daysAgo, firstName, lagosDate, naira } from "./format";
 import { tripTimes } from "./eta";
 import { fareSettings, minutesAway, nextJobPrice } from "./pricing";
 import { quoteFor } from "./quotes";
 import { knownRoute } from "./routing";
+import { pushToDevice } from "./push";
+import { classOf } from "./ride-classes";
 import { toast } from "./toasts";
 import type {
   AppNotification,
@@ -26,7 +28,9 @@ import type {
   DriverPublic,
   DriverStatus,
   EmergencyContact,
+  FlightInfo,
   Guarantor,
+  LiveShare,
   Mode,
   PayMethod,
   Payout,
@@ -34,6 +38,7 @@ import type {
   Place,
   Report,
   ReportKind,
+  RideClass,
   RideRequest,
   SavedPlace,
   Settings,
@@ -63,6 +68,12 @@ export interface Draft {
   notes: string[];
   parcel: string;
   receiver: string;
+  /** Car class for rides. */
+  rideClass?: RideClass;
+  /** Pickup time for a ride booked in advance; empty for now. */
+  scheduledFor?: number | null;
+  /** The flight an airport ride is built around. */
+  flight?: FlightInfo | null;
 }
 
 export interface DriverState {
@@ -106,6 +117,8 @@ export interface AppData {
   suspended: string[];
   /** Places found at run time (GPS pickups), so trips that used them still show where they were. */
   customPlaces: Place[];
+  /** Live-location links you've shared with friends or family. */
+  liveShares: LiveShare[];
 }
 
 interface ApplicationInput {
@@ -113,6 +126,8 @@ interface ApplicationInput {
   phone: string;
   city: string;
   vehicleType: VehicleType;
+  /** Cars only. */
+  rideClass?: RideClass;
   vehicle: string;
   plate: string;
   guarantor: Guarantor;
@@ -137,7 +152,14 @@ interface Actions {
   declineBid: (bidId: string) => void;
   acceptBid: (bidId: string) => string | null;
   customerPay: (tripId: string, method: PayMethod) => void;
-  rateTrip: (tripId: string, stars: number, tags: string[]) => void;
+  rateTrip: (tripId: string, stars: number, tags: string[], review?: string) => void;
+  /** A scheduled trip's driver sets off for the pickup. */
+  startScheduledTrip: (tripId: string) => void;
+  /** Sends a reminder or alert about a trip, once per key. */
+  tripAlert: (tripId: string, key: string, audience: Side, title: string, href?: string) => void;
+  startLiveShare: (hours: number) => string;
+  stopLiveShare: (id: string) => void;
+  updateLiveShares: (fix: { lat: number; lng: number; accuracy: number; at: number }) => void;
   cancelTrip: (tripId: string, by: Side, reason: string) => void;
   sendMessage: (tripId: string, from: ChatFrom, body: string) => void;
   report: (kind: ReportKind, message: string, from: Side, tripId?: string) => void;
@@ -187,7 +209,7 @@ function initialData(now = Date.now()): AppData {
       profile: { id: "cust-me", name: "", short: "", rating: 5 },
       email: "",
       phone: "",
-      draft: { editing: "drop", mode: "ride", pickupId: DEFAULT_PICKUP, dropId: null, offer: 0, payMethod: "cash", notes: [], parcel: "Small parcel", receiver: "" },
+      draft: { editing: "drop", mode: "ride", pickupId: DEFAULT_PICKUP, dropId: null, offer: 0, payMethod: "cash", notes: [], parcel: "Small parcel", receiver: "", rideClass: "economy", scheduledFor: null, flight: null },
       savedPlaces: [],
       contacts: [],
       lastOffers: {},
@@ -213,6 +235,7 @@ function initialData(now = Date.now()): AppData {
     settings: DEFAULT_SETTINGS,
     suspended: [],
     customPlaces: [],
+    liveShares: [],
   };
 }
 
@@ -264,7 +287,15 @@ export const todayTicket = (s: AppData, now = Date.now()) =>
 export const driverMode = (s: AppData): Mode => MODE_FOR_VEHICLE[s.driver.profile.vehicle.type];
 
 const liveDriverTrips = (s: AppData) =>
-  s.trips.filter((t) => t.driverSource === "me" && t.stage !== "completed" && t.stage !== "cancelled").sort((a, b) => a.createdAt - b.createdAt);
+  s.trips
+    .filter((t) => t.driverSource === "me" && t.stage !== "completed" && t.stage !== "cancelled" && t.stage !== "scheduled")
+    .sort((a, b) => a.createdAt - b.createdAt);
+
+/** Rides booked for later, soonest first. */
+export const upcomingTrips = (s: AppData, side: Side) =>
+  s.trips
+    .filter((t) => t.stage === "scheduled" && (side === "customer" ? t.customerSource === "me" : t.driverSource === "me"))
+    .sort((a, b) => (a.scheduledFor ?? 0) - (b.scheduledFor ?? 0));
 
 /** The trip the driver is on now. A next job booked while finishing it waits behind it. */
 export const activeDriverTrip = (s: AppData) => liveDriverTrips(s)[0] ?? null;
@@ -286,7 +317,7 @@ export const nextJobWindow = (s: AppData, now = Date.now()) => {
 
 /** The customer's trip that still needs them: riding, paying or rating. */
 export const activeCustomerTrip = (s: AppData) =>
-  s.trips.find((t) => t.customerSource === "me" && t.stage !== "cancelled" && t.rating === undefined) ?? null;
+  s.trips.find((t) => t.customerSource === "me" && t.stage !== "cancelled" && t.stage !== "scheduled" && t.rating === undefined) ?? null;
 
 export const openCustomerRequest = (s: AppData) => s.requests.find((r) => r.source === "me" && r.status === "open") ?? null;
 
@@ -302,6 +333,8 @@ export const driverFeed = (s: AppData, now = Date.now()) => {
   const mode = driverMode(s);
   return s.requests
     .filter((r) => r.source !== "me" && r.mode === mode && !s.driver.skipped.includes(r.id))
+    // Car drivers see requests for their class of car.
+    .filter((r) => mode !== "ride" || classOf(r) === classOf(s.driver.profile.vehicle))
     .filter((r) => {
       if (r.status === "open") return true;
       const bid = myBidFor(s, r.id);
@@ -327,6 +360,18 @@ export const tripMessages = (s: AppData, tripId: string) => s.messages.filter((m
 
 const offerKey = (a: string, b: string) => `${a}>${b}`;
 
+/** What the stand-in customers say about trips with you, until real customers do. */
+const BOT_REVIEWS: Record<number, string[]> = {
+  5: ["Very polite and the car was clean.", "Smooth ride, knew the shortcuts around Rumuokoro.", "On time and careful in traffic. Thank you!", "Great driver, would book again."],
+  4: ["Good trip, a bit late to pickup.", "Fine ride. AC could be colder.", "Nice driver, took a longer road."],
+};
+
+/** A pickup time in words for notifications: today at 05:40, tomorrow at 05:40, or Tue 4 Nov at 05:40. */
+export const when = (ts: number, now = Date.now()) => {
+  const days = Math.round((Date.parse(lagosDate(ts)) - Date.parse(lagosDate(now))) / 86_400_000);
+  return `${days === 0 ? "today" : days === 1 ? "tomorrow" : dayLabel(ts)} at ${clock(ts)}`;
+};
+
 export const useStore = create<Store>()(
   persist(
     (set, get) => {
@@ -336,6 +381,7 @@ export const useStore = create<Store>()(
       /** Shows a toast now and keeps it in the notifications list. */
       const notify = (audience: Side, title: string, href?: string) => {
         toast(audience, title);
+        pushToDevice(title, href);
         set((s) => ({ notifications: [{ id: uid(), audience, title, href, createdAt: Date.now(), read: false }, ...s.notifications].slice(0, 60) }));
       };
 
@@ -361,6 +407,32 @@ export const useStore = create<Store>()(
           registerPlace(p);
           set((s) => ({ customPlaces: [p, ...s.customPlaces.filter((x) => x.id !== p.id)].slice(0, 30) }));
         },
+        startScheduledTrip: (tripId) => {
+          const t = get().trips.find((x) => x.id === tripId);
+          if (!t || t.stage !== "scheduled") return;
+          patchTrip(tripId, { stage: "to_pickup", stageAt: Date.now() });
+          if (t.customerSource === "me") notify("customer", `${firstName(t.driver.name)} is on the way for your ${clock(t.scheduledFor ?? Date.now())} pickup.`, `/ride/trip/${t.id}`);
+        },
+
+        tripAlert: (tripId, key, audience, title, href) => {
+          const t = get().trips.find((x) => x.id === tripId);
+          if (!t || t.alerts?.includes(key)) return;
+          patchTrip(tripId, { alerts: [...(t.alerts ?? []), key] });
+          notify(audience, title, href);
+        },
+
+        startLiveShare: (hours) => {
+          const now = Date.now();
+          const share: LiveShare = { id: uid(), name: get().customer.profile.name, startedAt: now, until: now + hours * 3_600_000 };
+          set((s) => ({ liveShares: [share, ...s.liveShares].slice(0, 10) }));
+          return share.id;
+        },
+
+        stopLiveShare: (id) => set((s) => ({ liveShares: s.liveShares.map((x) => (x.id === id ? { ...x, stopped: true } : x)) })),
+
+        updateLiveShares: (fix) =>
+          set((s) => ({ liveShares: s.liveShares.map((x) => (!x.stopped && x.until > fix.at ? { ...x, last: fix } : x)) })),
+
         markFaceVerified: () => set((s) => ({ customer: { ...s.customer, faceVerifiedAt: Date.now() } })),
         signOut: () => set((s) => ({ signedIn: false, driver: { ...s.driver, online: false } })),
         setProfile: ({ name, email }) =>
@@ -375,7 +447,8 @@ export const useStore = create<Store>()(
             toast("customer", "Pick a drop-off that's different from your pickup.");
             return false;
           }
-          const recommended = quoteFor(place(draft.pickupId), place(placeId), draft.mode, Date.now(), get().settings).recommended;
+          const at = draft.scheduledFor ?? Date.now();
+          const recommended = quoteFor(place(draft.pickupId), place(placeId), draft.mode, at, get().settings, draft.mode === "ride" ? classOf(draft) : undefined).recommended;
           get().setDraft({ dropId: placeId, offer: lastOffers[offerKey(draft.pickupId, placeId)] ?? recommended });
           return true;
         },
@@ -402,13 +475,17 @@ export const useStore = create<Store>()(
             notes: d.notes,
             parcel: d.mode === "send" ? d.parcel : undefined,
             receiver: d.mode === "send" ? d.receiver : undefined,
+            rideClass: d.mode === "ride" ? classOf(d) : undefined,
+            scheduledFor: d.scheduledFor ?? undefined,
+            flight: d.flight ?? undefined,
             status: "open",
             createdAt: now,
-            expiresAt: now + s.settings.requestTtlMin * 60_000,
+            // Bookings for later stay open longer, since there's time to find the right driver.
+            expiresAt: now + (d.scheduledFor ? Math.max(30, s.settings.requestTtlMin) : s.settings.requestTtlMin) * 60_000,
             kmToPickup: 0,
             reach: 6 + Math.floor(Math.random() * 7),
           };
-          set({ requests: [req, ...s.requests] });
+          set({ requests: [req, ...s.requests], customer: { ...s.customer, draft: { ...d, scheduledFor: null, flight: null } } });
           return req.id;
         },
 
@@ -451,9 +528,12 @@ export const useStore = create<Store>()(
             price: bid.nextJob ? nextJobPrice(bid.amount, fare) : bid.amount,
             nextJob: bid.nextJob ? { ...bid.nextJob, fullPrice: bid.amount } : undefined,
             receiver: req.mode === "send" ? req.receiver : undefined,
+            rideClass: req.rideClass,
+            scheduledFor: req.scheduledFor,
+            flight: req.flight,
             payMethod: req.payMethod,
             notes: [req.parcel, ...req.notes].filter(Boolean) as string[],
-            stage: "to_pickup",
+            stage: req.scheduledFor ? "scheduled" : "to_pickup",
             stageAt: now,
             createdAt: now,
             etaMin: bid.etaMin,
@@ -466,7 +546,9 @@ export const useStore = create<Store>()(
             bids: s.bids.map((b) => (b.requestId === req.id ? { ...b, status: b.id === bidId ? "won" : b.status === "active" ? "lost" : b.status } : b)),
             customer: req.source === "me" ? { ...s.customer, lastOffers: { ...s.customer.lastOffers, [offerKey(req.pickupId, req.dropId)]: req.offer } } : s.customer,
           });
-          if (bid.source === "me")
+          if (req.scheduledFor && req.source === "me") notify("customer", `Booked: ${firstName(bid.driver.name)} picks you up ${when(req.scheduledFor)}. We'll remind you before.`, `/ride/trip/${trip.id}`);
+          if (bid.source === "me" && req.scheduledFor) notify("driver", `Scheduled job: ${firstName(req.customer.name)} at ${place(req.pickupId).name}, ${when(req.scheduledFor)}.`, `/driver/trip/${trip.id}`);
+          else if (bid.source === "me")
             notify(
               "driver",
               bid.nextJob
@@ -498,8 +580,8 @@ export const useStore = create<Store>()(
           finishIfSettled(tripId);
         },
 
-        rateTrip: (tripId, stars, tags) => {
-          patchTrip(tripId, { rating: stars, tags });
+        rateTrip: (tripId, stars, tags, review) => {
+          patchTrip(tripId, { rating: stars, tags, review: review?.trim() || undefined });
           finishIfSettled(tripId);
         },
 
@@ -565,7 +647,7 @@ export const useStore = create<Store>()(
               ...s.driver,
               status: "pending",
               online: false,
-              profile: { ...s.driver.profile, name: a.name, short: shortName(a.name), vehicle: { type: a.vehicleType, description: a.vehicle, plate: a.plate.toUpperCase() } },
+              profile: { ...s.driver.profile, name: a.name, short: shortName(a.name), vehicle: { type: a.vehicleType, description: a.vehicle, plate: a.plate.toUpperCase(), rideClass: a.vehicleType === "car" ? (a.rideClass ?? "economy") : undefined } },
             },
           }));
         },
@@ -650,7 +732,11 @@ export const useStore = create<Store>()(
           const t = get().trips.find((x) => x.id === tripId);
           if (!t) return;
           patchTrip(tripId, { driverConfirmedPaid: true, customerPaid: t.customerSource === "bot" ? true : t.customerPaid });
-          if (t.customerSource === "bot") patchTrip(tripId, { stage: "completed", stageAt: Date.now() });
+          if (t.customerSource === "bot") {
+            const stars = Math.random() < 0.75 ? 5 : 4;
+            const review = Math.random() < 0.5 ? BOT_REVIEWS[stars][Math.floor(Math.random() * BOT_REVIEWS[stars].length)] : undefined;
+            patchTrip(tripId, { stage: "completed", stageAt: Date.now(), rating: stars, review });
+          }
           else finishIfSettled(tripId);
         },
 

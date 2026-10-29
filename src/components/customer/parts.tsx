@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/controls";
 import { Avatar, Pill, Stars } from "@/components/ui/display";
-import { capitalise, firstName, naira } from "@/lib/format";
+import { capitalise, clock, firstName, naira } from "@/lib/format";
 import { place } from "@/lib/data/places";
 import { fareSettings, nextJobPrice } from "@/lib/pricing";
 import { quoteFor } from "@/lib/quotes";
@@ -41,7 +41,7 @@ export function ModeSwitch() {
   );
 }
 
-export function BidCard({ bid, onAccept, onDecline }: { bid: Bid; onAccept: () => void; onDecline: () => void }) {
+export function BidCard({ bid, onAccept, onDecline, scheduledFor }: { bid: Bid; onAccept: () => void; onDecline: () => void; scheduledFor?: number }) {
   const settings = useStore((s) => s.settings);
   const fare = fareSettings(settings);
   // A rider finishing a delivery nearby takes this as their next job, so it costs less.
@@ -57,7 +57,11 @@ export function BidCard({ bid, onAccept, onDecline }: { bid: Bid; onAccept: () =
           {capitalise(bid.driver.vehicle.description)} · {bid.driver.vehicle.plate}
         </p>
         <p className="text-[0.76rem] text-muted">
-          {bid.nextJob ? `Finishing a delivery nearby · with you in about ${bid.etaMin} min` : `${bid.etaMin} min away`}
+          {scheduledFor
+            ? `Will pick you up at ${clock(scheduledFor)}`
+            : bid.nextJob
+              ? `Finishing a delivery nearby · with you in about ${bid.etaMin} min`
+              : `${bid.etaMin} min away`}
         </p>
       </div>
       <div className="grid justify-items-end gap-1">

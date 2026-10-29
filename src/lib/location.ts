@@ -68,6 +68,19 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l);
 };
 
+/** Calls back with each new position, outside React. Returns a function that stops it. */
+export function onFix(cb: (f: Fix) => void) {
+  let last: Fix | null = null;
+  const l = () => {
+    if (state.fix && state.fix !== last) {
+      last = state.fix;
+      cb(state.fix);
+    }
+  };
+  listeners.add(l);
+  return () => void listeners.delete(l);
+}
+
 /** Live position and whether location is on, for components. */
 export function useMyLocation() {
   return useSyncExternalStore(

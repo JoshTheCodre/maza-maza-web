@@ -8,6 +8,7 @@ import { useStore } from "@/lib/store";
 import type { TripStage } from "@/lib/types";
 
 const STAGE: Record<TripStage, [string, "accept" | "counter" | "neutral" | "lost"]> = {
+  scheduled: ["Scheduled", "neutral"],
   to_pickup: ["To pickup", "counter"],
   at_pickup: ["At pickup", "counter"],
   on_trip: ["On trip", "counter"],

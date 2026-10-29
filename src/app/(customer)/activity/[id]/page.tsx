@@ -9,6 +9,7 @@ import { Avatar, Plate, RouteDots, Stars } from "@/components/ui/display";
 import { place } from "@/lib/data/places";
 import { knownRoute } from "@/lib/routing";
 import { capitalise, clock, dayLabel, naira } from "@/lib/format";
+import { RIDE_CLASSES, classOf } from "@/lib/ride-classes";
 import { useStore } from "@/lib/store";
 
 export default function TripReceipt() {
@@ -40,7 +41,10 @@ export default function TripReceipt() {
           <p className="flex flex-wrap items-center gap-2 font-bold">
             {t.driver.short} <Stars rating={t.driver.rating} />
           </p>
-          <p className="text-[0.76rem] text-muted">{capitalise(t.driver.vehicle.description)}</p>
+          <p className="text-[0.76rem] text-muted">
+            {capitalise(t.driver.vehicle.description)}
+            {t.mode === "ride" ? ` · ${RIDE_CLASSES[classOf(t)].label}` : ""}
+          </p>
         </div>
         <Plate>{t.driver.vehicle.plate}</Plate>
       </div>
@@ -53,8 +57,11 @@ export default function TripReceipt() {
             ]
           : [
               ["Agreed fare", naira(t.price)],
+              ...(t.nextJob ? [["Before next-job discount", naira(t.nextJob.fullPrice)]] : []),
               ["Paid by", capitalise(t.payMethod)],
               ["Maza-Maza fee", "₦0"],
+              ...(t.flight ? [["Flight", `${t.flight.number ?? "Your flight"}, ${t.flight.kind === "departure" ? "took off" : "landed"} ${clock(t.flight.time)}`]] : []),
+              ...(t.receiver ? [["Received by", t.receiver]] : []),
               ["Your rating", t.rating ? "★".repeat(t.rating) : "Not rated"],
             ]
         ).map(([k, v]) => (
@@ -64,10 +71,16 @@ export default function TripReceipt() {
           </div>
         ))}
       </dl>
+      {t.review && (
+        <figure className="rounded-2xl bg-surface-2 px-3.5 py-3">
+          <figcaption className="text-[0.76rem] font-bold text-muted">Your review</figcaption>
+          <blockquote className="text-[0.94rem]">“{t.review}”</blockquote>
+        </figure>
+      )}
       <div className="flex flex-wrap gap-2">
         <Button
           onClick={() => {
-            s.setDraft({ pickupId: t.pickupId, dropId: t.dropId, mode: t.mode, offer: t.price });
+            s.setDraft({ pickupId: t.pickupId, dropId: t.dropId, mode: t.mode, offer: t.price, rideClass: t.rideClass ?? "economy", scheduledFor: null, flight: null });
             router.push("/ride/offer");
           }}
         >

@@ -5,9 +5,10 @@ import { clock, minutesLabel, naira } from "@/lib/format";
 import { TRAFFIC_LABEL, type FareQuote } from "@/lib/pricing";
 
 /** Distance, time in today's traffic and when you'd arrive. */
-export function TripFacts({ quote, now, pickupMin }: { quote: FareQuote; now: number; pickupMin: number }) {
+/** `startAt` is when the pickup happens: a booked time, or now plus the nearest driver's drive. */
+export function TripFacts({ quote, startAt }: { quote: FareQuote; startAt: number }) {
   const { km, minutes, period } = quote.trip;
-  const arrive = now + (pickupMin + 2 + minutes) * 60_000;
+  const arrive = startAt + (2 + minutes) * 60_000;
   return (
     <ul className="grid grid-cols-3 gap-2 text-center">
       <li className="grid gap-0.5 rounded-2xl bg-surface-2 px-2 py-2.5">

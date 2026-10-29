@@ -8,7 +8,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { MapView } from "@/components/map/map-view";
 import { useNow } from "@/hooks/use-now";
 import { place } from "@/lib/data/places";
-import { minutesSeconds, naira } from "@/lib/format";
+import { clock, dayLabel, minutesSeconds, naira } from "@/lib/format";
+import { RIDE_CLASSES, classOf } from "@/lib/ride-classes";
 import { useStore } from "@/lib/store";
 
 export default function RequestPage() {
@@ -97,6 +98,13 @@ export default function RequestPage() {
         <p className="font-bold leading-snug">
           {a.name} → {b.name}
         </p>
+        {(req.scheduledFor || req.rideClass) && (
+          <p className="text-[0.84rem] text-muted">
+            {req.scheduledFor ? `Booking for ${dayLabel(req.scheduledFor)}, ${clock(req.scheduledFor)}` : "Ride now"}
+            {req.mode === "ride" ? ` · ${RIDE_CLASSES[classOf(req)].label}` : ""}
+            {req.flight?.number ? ` · flight ${req.flight.number}` : ""}
+          </p>
+        )}
         <p className="rounded-xl bg-surface-2 px-3 py-2.5 text-[0.84rem] text-muted" aria-live="polite">
           {bids.length
             ? `${bids.length} ${bids.length === 1 ? "reply" : "replies"} so far. Accept one, or wait for more.`
@@ -108,6 +116,7 @@ export default function RequestPage() {
             <BidCard
               key={bid.id}
               bid={bid}
+              scheduledFor={req.scheduledFor}
               onDecline={() => s.declineBid(bid.id)}
               onAccept={() => {
                 const tripId = s.acceptBid(bid.id);

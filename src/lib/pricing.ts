@@ -7,7 +7,8 @@
 //   time   = trip minutes in today's traffic × the driver's time per minute
 // Every rate lives in Admin → Settings so it can follow the pump price.
 
-import type { Mode, Place, Settings, VehicleType } from "./types";
+import { RIDE_CLASSES } from "./ride-classes";
+import type { Mode, Place, RideClass, Settings, VehicleType } from "./types";
 
 export interface VehicleRates {
   /** Covers the drive to the pickup. */
@@ -33,6 +34,8 @@ export interface FareSettings {
   nextJobPct: number;
   /** How close to their drop-off (in minutes) a rider must be to take a next job. */
   nextJobWindowMin: number;
+  /** How much more each car class costs than Economy, in percent. */
+  classPct: Record<RideClass, number>;
 }
 
 // Pump price: Port Harcourt depots sold petrol at about ₦1,350/L in mid-October 2026 and stations sell above
@@ -47,6 +50,7 @@ export const DEFAULT_FARE: FareSettings = {
   airportFee: 0,
   nextJobPct: 10,
   nextJobWindowMin: 5,
+  classPct: { economy: 0, comfort: 25, suv: 50, group: 90 },
 };
 
 const round50 = (n: number) => Math.round(n / 50) * 50;
@@ -60,6 +64,7 @@ export const fareSettings = (s: Pick<Settings, "fare">): FareSettings => ({
   ...s.fare,
   car: { ...DEFAULT_FARE.car, ...s.fare?.car },
   bike: { ...DEFAULT_FARE.bike, ...s.fare?.bike },
+  classPct: { ...DEFAULT_FARE.classPct, ...s.fare?.classPct },
 });
 
 export type TrafficPeriod = "night" | "morning_rush" | "evening_rush" | "day" | "weekend";
@@ -135,18 +140,23 @@ export interface FareQuote {
   trip: TripEstimate;
 }
 
-export function quoteFare(trip: TripEstimate, mode: Mode, fare: FareSettings, airport: boolean): FareQuote {
+export function quoteFare(trip: TripEstimate, mode: Mode, fare: FareSettings, airport: boolean, rideClass: RideClass = "economy"): FareQuote {
   const vehicle = vehicleFor(mode);
   const r = fare[vehicle];
   const fuel = (trip.km / r.kmPerLitre) * fare.fuelPrice;
   const upkeep = trip.km * r.upkeepPerKm;
   const time = trip.minutes * r.perMinute;
-  const sub = r.baseFare + fuel + upkeep + time;
+  const base = r.baseFare + fuel + upkeep + time;
+  // Bigger and better cars cost more to run and to buy, so each class adds a share on top of Economy.
+  const classShare = mode === "ride" ? fare.classPct[rideClass] / 100 : 0;
+  const classExtra = base * classShare;
+  const sub = base + classExtra;
   const rush = trip.period === "morning_rush" || trip.period === "evening_rush" ? (sub * fare.rushPct) / 100 : 0;
   const night = trip.period === "night" ? (sub * fare.nightPct) / 100 : 0;
   const airportAmount = airport ? fare.airportFee : 0;
   const total = sub + rush + night + airportAmount;
-  const recommended = Math.max(r.minFare, round50(total));
+  const minFare = round50(r.minFare * (1 + classShare));
+  const recommended = Math.max(minFare, round50(total));
 
   const lines: FareLine[] = [
     { label: "Base fare", amount: r.baseFare },
@@ -154,6 +164,7 @@ export function quoteFare(trip: TripEstimate, mode: Mode, fare: FareSettings, ai
     { label: "Tyres, oil and upkeep", amount: upkeep },
     { label: `Driver's time · ${trip.minutes} min`, amount: time },
   ];
+  if (classExtra) lines.push({ label: `${RIDE_CLASSES[rideClass].label} +${fare.classPct[rideClass]}%`, amount: classExtra });
   if (rush) lines.push({ label: `Rush hour +${fare.rushPct}%`, amount: rush });
   if (night) lines.push({ label: `Late night +${fare.nightPct}%`, amount: night });
   if (airportAmount) lines.push({ label: "Airport fee", amount: airportAmount });
@@ -161,7 +172,7 @@ export function quoteFare(trip: TripEstimate, mode: Mode, fare: FareSettings, ai
 
   return {
     recommended,
-    low: Math.max(r.minFare, round50(recommended * 0.85)),
+    low: Math.max(minFare, round50(recommended * 0.85)),
     high: round50(recommended * 1.2),
     lines: lines.map((l) => ({ ...l, amount: Math.round(l.amount) })),
     trip,

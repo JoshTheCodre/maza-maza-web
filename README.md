@@ -28,6 +28,12 @@ code works until SMS/WhatsApp is connected), sets their name, and lands on the r
 `http://192.168…` won't work. Run `npm run dev:phone` (HTTPS with a self-signed certificate on your
 network), open `https://<your-computer's-IP>:3100` on the phone and accept the certificate warning.
 
+**Booking options:** car classes (Economy, Comfort, SUV, Group, priced as a percentage over Economy in
+Admin → Settings), rides now or scheduled up to a week ahead, and airport rides that work out the pickup time
+from the flight. Scheduled trips send reminders (day before, hour before, time to leave, driver 2 minutes away)
+from `src/lib/reminders.ts`, and reach the phone through the browser's notifications when it's allowed
+(`src/lib/push.ts`). The backend should move these to a scheduled job with web push.
+
 **Maps, routes and fares** work without any keys:
 - Street maps are OpenStreetMap via [OpenFreeMap](https://openfreemap.org) tiles and MapLibre. Its web
   worker is copied to `public/maplibre/` after `npm install` (`scripts/copy-map-worker.mjs`).
@@ -44,10 +50,10 @@ network), open `https://<your-computer's-IP>:3100` on the phone and accept the c
 | Landing | `/` |
 | Sign up | `/signup` (phone or Google) → `/signup/phone` → `/signup/verify` → `/welcome` (name) → `/welcome/role` (passenger or driver) → `/welcome/verify` (+ `/camera` selfie) → `/welcome/location` → `/welcome/notifications` → `/welcome/pay` (passengers) · drivers then go to `/driver/signup` |
 | Log in | `/login` (phone or Google) → `/login/phone` → `/login/verify` · Google users add a number at `/add-phone` |
-| Rider | `/ride` · `/ride/search` · `/ride/offer` · `/ride/request/[id]` · `/ride/trip/[id]` (+ `/chat`) · `/activity` (+ `/[id]`) · `/account` (+ `/profile`, `/places`, `/safety`) · `/notifications` · `/help` |
+| Rider | `/ride` · `/ride/search` · `/ride/offer` · `/ride/request/[id]` · `/ride/trip/[id]` (+ `/chat`) · `/activity` (+ `/[id]`) · `/account` (+ `/profile`, `/places`, `/safety`) · `/notifications` · `/help` · `/ride/airport` (book around a flight) |
 | Driver | `/driver/signup` · `/driver` offers · `/driver/trip/[id]` (+ `/chat`) · `/driver/ticket` · `/driver/wallet` · `/driver/earnings` · `/driver/account` (+ `/payout`, `/profile`) · `/driver/notifications` · `/driver/help` |
 | Admin | `/admin` · `/admin/drivers` (+ `/[id]`) · `/admin/customers` · `/admin/trips` · `/admin/tickets` · `/admin/reports` · `/admin/settings` |
-| Public | `/share/[id]` trip link: family follow a ride; a delivery's receiver sees when it arrives · `/share/[id]/chat` receiver's group chat with the rider and sender · not-found page |
+| Public | `/share/[id]` trip link: family follow a ride; a delivery's receiver sees when it arrives · `/share/[id]/chat` receiver's group chat with the rider and sender · `/live/[id]` someone's live location (shared from Account → Safety) · not-found page |
 
 ## Where things live
 

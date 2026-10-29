@@ -5,6 +5,7 @@ import { useNow } from "@/hooks/use-now";
 import { place } from "@/lib/data/places";
 import { clock, dayLabel, daysAgo, lagosDate, naira } from "@/lib/format";
 import { driverHistory, todayTicket, todaysDriverTrips, useStore } from "@/lib/store";
+import type { Trip } from "@/lib/types";
 
 export default function EarningsPage() {
   const s = useStore();
@@ -58,15 +59,13 @@ export default function EarningsPage() {
         <ul className="divide-y divide-line rounded-2xl border-[1.5px] border-line bg-surface">
           {trips.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-              <span className="min-w-0">
-                <b className="block truncate text-[0.9rem] font-semibold">
-                  {place(t.pickupId).name} → {place(t.dropId).name}
-                </b>
-                <small className="text-[0.76rem] text-muted">
+              <span className="min-w-0 flex-1">
+                <b className="block truncate text-[0.9rem] font-semibold">To {place(t.dropId).name}</b>
+                <small className="block truncate text-[0.76rem] text-muted">
                   {clock(t.stageAt)} · {t.customer.short} · {t.payMethod}
                 </small>
               </span>
-              <span className="tabular font-mono text-[0.88rem] font-semibold text-accept">+{naira(t.price)}</span>
+              <span className="tabular flex-none text-[0.92rem] font-bold whitespace-nowrap text-accept">+{naira(t.price)}</span>
             </li>
           ))}
         </ul>
@@ -96,6 +95,35 @@ export default function EarningsPage() {
         </ul>
         <p className="text-[0.76rem] text-muted">Bars show fares collected. Amounts show what you kept after the day ticket.</p>
       </div>
+      <DriverReviews trips={done} />
     </Page>
+  );
+}
+
+/** Ratings and reviews customers left after trips with you. */
+function DriverReviews({ trips }: { trips: Trip[] }) {
+  const rated = trips.filter((t) => t.rating);
+  if (!rated.length) return null;
+  const average = rated.reduce((sum, t) => sum + (t.rating ?? 0), 0) / rated.length;
+  const reviews = rated.filter((t) => t.review).slice(0, 5);
+  return (
+    <section className="grid gap-2">
+      <h2 className="font-bold">What customers say</h2>
+      <p className="text-[0.88rem] text-muted">
+        ★ {average.toFixed(1)} from {rated.length} {rated.length === 1 ? "rating" : "ratings"}. Good ratings help you win more offers.
+      </p>
+      {reviews.length > 0 && (
+        <ul className="grid gap-2">
+          {reviews.map((t) => (
+            <li key={t.id} className="rounded-2xl border-[1.5px] border-line bg-surface p-3">
+              <p className="text-[0.92rem]">“{t.review}”</p>
+              <small className="text-[0.76rem] text-muted">
+                {"★".repeat(t.rating ?? 0)} · {t.customer.short} · {dayLabel(t.createdAt)}
+              </small>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

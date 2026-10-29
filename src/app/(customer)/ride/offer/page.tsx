@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { MapLayout, Panel } from "@/components/app/layout-parts";
+import { ClassPicker, FlightSummary, WhenPicker } from "@/components/customer/booking-options";
 import { FareGuide, TripFacts } from "@/components/customer/fare-guide";
 import { ModeSwitch } from "@/components/customer/parts";
 import { Button } from "@/components/ui/button";
@@ -14,8 +15,9 @@ import { useNow } from "@/hooks/use-now";
 import { useQuote } from "@/hooks/use-quote";
 import { PARCEL_TYPES, RIDE_NOTES } from "@/lib/config";
 import { place } from "@/lib/data/places";
-import { naira } from "@/lib/format";
+import { clock, dayLabel, naira } from "@/lib/format";
 import { fareSettings, minutesAway } from "@/lib/pricing";
+import { classOf } from "@/lib/ride-classes";
 import { openCustomerRequest, useStore } from "@/lib/store";
 import type { PayMethod } from "@/lib/types";
 
@@ -28,7 +30,11 @@ export default function OfferPage() {
   const now = useNow(30_000);
   const a = place(d.pickupId);
   const b = d.dropId ? place(d.dropId) : undefined;
-  const q = useQuote(a, b, d.mode);
+  // Booked for later? Price and time it for then: traffic depends on the hour.
+  const scheduledFor = d.scheduledFor ?? null;
+  const at = scheduledFor ?? now;
+  const rideClass = classOf(d);
+  const q = useQuote(a, b, d.mode, at, d.mode === "ride" ? rideClass : undefined);
   const recommended = q?.quote.recommended;
   const setDraft = s.setDraft;
 
@@ -49,6 +55,7 @@ export default function OfferPage() {
 
   // Nearby drivers are about a kilometre away until live GPS arrives.
   const pickupMin = minutesAway(1.2, d.mode, now);
+  const startAt = scheduledFor ?? now + pickupMin * 60_000;
   const last = s.customer.lastOffers[`${d.pickupId}>${d.dropId}`];
   const ok = d.offer >= MIN_OFFER && !open;
   const toggleNote = (n: string) => s.setDraft({ notes: d.notes.includes(n) ? d.notes.filter((x) => x !== n) : [...d.notes, n] });
@@ -81,7 +88,13 @@ export default function OfferPage() {
               if (id) router.push(`/ride/request/${id}`);
             }}
           >
-            {open ? "You already have an open request" : ok ? `Send offer · ${naira(d.offer)}` : `Enter an offer of ${naira(MIN_OFFER)} or more`}
+            {open
+              ? "You already have an open request"
+              : !ok
+                ? `Enter an offer of ${naira(MIN_OFFER)} or more`
+                : scheduledFor
+                  ? `Book for ${clock(scheduledFor)} · ${naira(d.offer)}`
+                  : `Send offer · ${naira(d.offer)}`}
           </Button>
         }
       >
@@ -91,7 +104,9 @@ export default function OfferPage() {
               {a.name} → {b.name}
             </h1>
             <p className="text-[0.78rem] text-muted">
-              {d.mode === "ride" ? "Drivers" : "Riders"} nearby are about {pickupMin} min away
+              {scheduledFor
+                ? `Pickup ${dayLabel(scheduledFor)} at ${clock(scheduledFor)}`
+                : `${d.mode === "ride" ? "Drivers" : "Riders"} nearby are about ${pickupMin} min away`}
             </p>
           </div>
           <Link href="/ride/search" onClick={() => s.setDraft({ editing: "drop" })} className="flex-none text-[0.86rem] font-bold text-brand">
@@ -103,8 +118,11 @@ export default function OfferPage() {
             You have an open {naira(open.offer)} offer. Open it to see replies →
           </Link>
         )}
-        <TripFacts quote={q.quote} now={now} pickupMin={pickupMin} />
+        {d.flight && <FlightSummary flight={d.flight} pickupAt={scheduledFor} />}
+        <TripFacts quote={q.quote} startAt={startAt} />
         <ModeSwitch />
+        <WhenPicker value={scheduledFor} onChange={(t) => setDraft({ scheduledFor: t })} now={now} />
+        {d.mode === "ride" && <ClassPicker route={q.route} a={a} b={b} at={at} value={rideClass} onChange={(c) => setDraft({ rideClass: c })} />}
         {d.mode === "send" && (
           <div className="grid gap-2">
             <p className="text-[0.85rem] font-bold">What are you sending?</p>

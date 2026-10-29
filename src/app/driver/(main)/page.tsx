@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { BuyTicketSheet } from "@/components/driver/money";
 import { FeedCard } from "@/components/driver/feed-card";
+import { UpcomingJobs } from "@/components/driver/scheduled-job";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/display";
 import { MapView } from "@/components/map/map-view";
@@ -66,12 +67,13 @@ export default function DriverOffers() {
               <span className="text-[0.84rem] font-bold text-brand">Add</span>
             </Link>
           )}
+          <UpcomingJobs />
           {body}
         </div>
       </div>
       <div className="relative hidden border-l border-line lg:block">
         <MapView pickup={place(DRIVER_SPOT)} others={feed.filter((r) => r.status === "open").map((r) => place(r.pickupId))} minWidth={260} />
-        {feed.length > 0 && <p className="absolute top-4 left-4 rounded-full bg-surface px-3 py-1.5 text-[0.8rem] font-semibold shadow-soft">Green pin: you · White pins: pickups</p>}
+        {feed.length > 0 && <p className="absolute top-4 left-4 rounded-full bg-surface px-3 py-1.5 text-[0.8rem] font-semibold shadow-soft">Black pin: you · White pins: pickups</p>}
       </div>
       <BuyTicketSheet open={buying} onClose={() => setBuying(false)} />
     </div>

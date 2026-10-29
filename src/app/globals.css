@@ -142,6 +142,14 @@
   }
 }
 
+/* Grid items may shrink below their content, so long place names truncate instead of widening the page.
+   In the base layer, so any explicit min-width utility still wins. */
+@layer base {
+  .grid > * {
+    min-width: 0;
+  }
+}
+
 html {
   -webkit-tap-highlight-color: transparent;
 }

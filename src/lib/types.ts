@@ -6,6 +6,8 @@ import type { FareSettings } from "./pricing";
 export type Mode = "ride" | "send";
 export type VehicleType = "car" | "bike";
 export type PayMethod = "cash" | "transfer";
+/** Car classes: see lib/ride-classes.ts. Dispatch bikes have no class. */
+export type RideClass = "economy" | "comfort" | "suv" | "group";
 export type TopUpMethod = "card" | "transfer" | "ussd";
 /** Whether a person is the signed-in user ("me") or someone else on the platform. */
 export type Source = "me" | "bot";
@@ -32,6 +34,8 @@ export interface Vehicle {
   type: VehicleType;
   description: string;
   plate: string;
+  /** Cars only. */
+  rideClass?: RideClass;
 }
 
 export interface Payout {
@@ -47,6 +51,16 @@ export interface DriverPublic extends Person {
 }
 
 export type RequestStatus = "open" | "matched" | "cancelled" | "expired";
+
+/** A flight an airport ride is built around. */
+export interface FlightInfo {
+  /** "departure": you're catching it, so we work back from take-off. "arrival": you're landing, so we pick you up after. */
+  kind: "departure" | "arrival";
+  number?: string;
+  /** Take-off time for departures, landing time for arrivals. */
+  time: number;
+  international: boolean;
+}
 
 export interface RideRequest {
   id: string;
@@ -67,6 +81,10 @@ export interface RideRequest {
   /** Shown to drivers; the real app works this out from live GPS. */
   kmToPickup: number;
   reach: number;
+  rideClass?: RideClass;
+  /** Booked in advance: when the pickup is. */
+  scheduledFor?: number;
+  flight?: FlightInfo;
 }
 
 /**
@@ -94,7 +112,8 @@ export interface Bid {
   createdAt: number;
 }
 
-export type TripStage = "to_pickup" | "at_pickup" | "on_trip" | "payment" | "completed" | "cancelled";
+/** "scheduled" trips are booked for later and become "to_pickup" when the driver sets off. */
+export type TripStage = "scheduled" | "to_pickup" | "at_pickup" | "on_trip" | "payment" | "completed" | "cancelled";
 
 export interface Trip {
   id: string;
@@ -121,6 +140,13 @@ export interface Trip {
   driverConfirmedPaid: boolean;
   rating?: number;
   tags?: string[];
+  /** What the customer wrote about the driver, if anything. */
+  review?: string;
+  rideClass?: RideClass;
+  scheduledFor?: number;
+  flight?: FlightInfo;
+  /** Reminders and alerts already sent for this trip, so each goes out once. */
+  alerts?: string[];
   cancelledBy?: "customer" | "driver";
   cancelReason?: string;
 }
@@ -235,6 +261,17 @@ export interface EmergencyContact {
   id: string;
   name: string;
   phone: string;
+}
+
+/** A link someone can open to follow your live position for a while, no trip needed. */
+export interface LiveShare {
+  id: string;
+  name: string;
+  startedAt: number;
+  /** When it stops on its own. */
+  until: number;
+  stopped?: boolean;
+  last?: { lat: number; lng: number; accuracy: number; at: number };
 }
 
 export interface ToastMessage {

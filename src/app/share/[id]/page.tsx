@@ -17,6 +17,7 @@ import { useStore } from "@/lib/store";
 import type { Trip } from "@/lib/types";
 
 const RIDE_STATUS: Record<string, string> = {
+  scheduled: "Booked for later",
   to_pickup: "Driver on the way to pickup",
   at_pickup: "Driver at the pickup",
   on_trip: "On the trip",
@@ -26,6 +27,7 @@ const RIDE_STATUS: Record<string, string> = {
 };
 
 const DELIVERY_STATUS: Record<string, string> = {
+  scheduled: "This delivery is booked for later",
   to_pickup: "The rider is going to collect your package",
   at_pickup: "The rider is collecting your package",
   on_trip: "Your package is on the way",

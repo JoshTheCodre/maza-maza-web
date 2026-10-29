@@ -13,6 +13,7 @@ import { MapView } from "@/components/map/map-view";
 import { useNow } from "@/hooks/use-now";
 import { DRIVER_CANCEL_REASONS, NO_SHOW_WAIT_MS } from "@/lib/config";
 import { FeedCard } from "@/components/driver/feed-card";
+import { ScheduledJob } from "@/components/driver/scheduled-job";
 import { place } from "@/lib/data/places";
 import { tripTimes } from "@/lib/eta";
 import { clock, firstName, minutesSeconds, naira } from "@/lib/format";
@@ -33,6 +34,7 @@ export default function DriverTripPage() {
     );
   }
   if (trip.stage === "cancelled") return <Cancelled trip={trip} />;
+  if (trip.stage === "scheduled") return <ScheduledJob trip={trip} />;
   return trip.stage === "completed" ? <Summary trip={trip} /> : <Live trip={trip} />;
 }
 

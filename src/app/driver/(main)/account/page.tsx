@@ -8,6 +8,7 @@ import { Page, PageHeader } from "@/components/app/layout-parts";
 import { Avatar, Plate } from "@/components/ui/display";
 import { VEHICLE_LABEL } from "@/lib/config";
 import { capitalise } from "@/lib/format";
+import { RIDE_CLASSES, classOf } from "@/lib/ride-classes";
 import { unreadCount, useStore } from "@/lib/store";
 
 export default function DriverAccount() {
@@ -30,7 +31,7 @@ export default function DriverAccount() {
         <Avatar name={p.name || s.customer.profile.name} size="lg" />
         <div className="min-w-0 flex-1">
           <p className="font-bold">{p.name || s.customer.profile.name}</p>
-          <p className="text-[0.84rem] text-muted">{approved ? `${VEHICLE_LABEL[p.vehicle.type]} · ★ ${p.rating.toFixed(1)}` : s.driver.status === "pending" ? "Application being checked" : "Not a driver yet"}</p>
+          <p className="text-[0.84rem] text-muted">{approved ? `${VEHICLE_LABEL[p.vehicle.type]}${p.vehicle.type === "car" ? ` · ${RIDE_CLASSES[classOf(p.vehicle)].label}` : ""} · ★ ${p.rating.toFixed(1)}` : s.driver.status === "pending" ? "Application being checked" : "Not a driver yet"}</p>
           {approved && <p className="text-[0.84rem] text-muted">{capitalise(p.vehicle.description)}</p>}
         </div>
         {approved && <Plate>{p.vehicle.plate}</Plate>}

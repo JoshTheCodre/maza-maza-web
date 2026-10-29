@@ -2,6 +2,7 @@
 
 import {
   Briefcase,
+  CalendarClock,
   Check,
   ChevronDown,
   Clock,
@@ -10,7 +11,9 @@ import {
   LocateFixed,
   MapPin,
   Moon,
+  Plane,
   Plus,
+  Radio,
   Search,
   Star,
   Sun,
@@ -20,6 +23,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { BellLink } from "@/components/app/common";
 import { MapLayout, Panel } from "@/components/app/layout-parts";
+import { UpcomingTrips } from "@/components/customer/booking-options";
 import { ModeSwitch, ResumeBanner } from "@/components/customer/parts";
 import { Avatar } from "@/components/ui/display";
 import { MapView } from "@/components/map/map-view";
@@ -77,9 +81,13 @@ export default function RideHome() {
       .finally(() => setLocating(false));
   };
 
+  // Bookings from here are for now; Schedule and Airport set a time.
+  const forNow = { scheduledFor: null, flight: null };
   const go = (placeId: string) => {
+    s.setDraft(forNow);
     if (s.chooseDrop(placeId)) router.push("/ride/offer");
   };
+  const tile = "grid min-h-[68px] place-items-center content-center gap-1 rounded-2xl bg-surface-2 px-2 text-[0.8rem] font-semibold hover:bg-line";
 
   return (
     <MapLayout
@@ -156,12 +164,31 @@ export default function RideHome() {
         <ModeSwitch />
         <Link
           href="/ride/search"
-          onClick={() => s.setDraft({ editing: "drop" })}
+          onClick={() => s.setDraft({ editing: "drop", ...forNow })}
           className="flex min-h-[52px] items-center gap-2.5 rounded-2xl bg-surface-2 px-4 text-[1.02rem] font-bold"
         >
           <Search size={20} className="text-muted" aria-hidden />
           {d.mode === "ride" ? "Where to?" : "Where should it go?"}
         </Link>
+        <div className="grid grid-cols-3 gap-2">
+          <Link href="/ride/airport" className={tile}>
+            <Plane size={20} aria-hidden /> Airport
+          </Link>
+          <button
+            type="button"
+            className={tile}
+            onClick={() => {
+              s.setDraft({ editing: "drop", flight: null, scheduledFor: Math.ceil((Date.now() + 60 * 60_000) / 300_000) * 300_000 });
+              router.push("/ride/search");
+            }}
+          >
+            <CalendarClock size={20} aria-hidden /> Schedule
+          </button>
+          <Link href="/account/safety#live" className={tile}>
+            <Radio size={20} aria-hidden /> Share location
+          </Link>
+        </div>
+        <UpcomingTrips />
         {others.length > 0 && (
           <div className="no-scrollbar flex gap-2 overflow-x-auto">
             {others.map((sp) => {

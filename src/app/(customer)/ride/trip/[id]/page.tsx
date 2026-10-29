@@ -1,12 +1,14 @@
 "use client";
 
 import { Check, Copy, Siren, X } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { CancelTripSheet, ShareTripButton, SosSheet } from "@/components/app/common";
 import { ChatButton } from "@/components/app/chat-view";
 import { MapLayout, Page, Panel } from "@/components/app/layout-parts";
 import { ReportSheet } from "@/components/customer/report-sheet";
+import { ScheduledView } from "@/components/customer/scheduled-view";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Chip, Segmented } from "@/components/ui/controls";
 import { Avatar, LockedFare, Plate, RouteDots, Stars } from "@/components/ui/display";
@@ -34,6 +36,7 @@ export default function TripPage() {
     );
   }
   if (trip.stage === "cancelled") return <CancelledView trip={trip} />;
+  if (trip.stage === "scheduled") return <ScheduledView trip={trip} />;
   if (trip.stage === "payment" && !trip.customerPaid) return <PayView trip={trip} />;
   if ((trip.stage === "payment" || trip.stage === "completed") && trip.rating === undefined) return <RateView trip={trip} />;
   if (trip.stage === "completed" || trip.stage === "payment") return <DoneView trip={trip} />;
@@ -109,6 +112,9 @@ function LiveView({ trip }: { trip: Trip }) {
           <button type="button" onClick={() => setReport(true)} className="text-[0.86rem] font-semibold text-muted underline">
             Report a problem
           </button>
+          <Link href="/help" className="text-[0.86rem] font-semibold text-muted underline">
+            Get help
+          </Link>
         </div>
       </Panel>
       <ReportSheet open={report} onClose={() => setReport(false)} tripId={trip.id} />
@@ -190,6 +196,7 @@ function RateView({ trip }: { trip: Trip }) {
   const rate = useStore((s) => s.rateTrip);
   const [stars, setStars] = useState(5);
   const [tags, setTags] = useState<string[]>([]);
+  const [review, setReview] = useState("");
   const name = firstName(trip.driver.name);
   return (
     <Page>
@@ -212,7 +219,18 @@ function RateView({ trip }: { trip: Trip }) {
           </Chip>
         ))}
       </div>
-      <Button size="lg" block onClick={() => rate(trip.id, stars, tags)}>
+      <label className="grid gap-1 text-[0.85rem] font-bold">
+        Write a review <span className="font-normal text-muted">(optional)</span>
+        <textarea
+          value={review}
+          onChange={(e) => setReview(e.target.value.slice(0, 280))}
+          rows={3}
+          placeholder={`What was good about the trip with ${name}? Anything to improve?`}
+          className="rounded-xl border-[1.5px] border-line bg-surface px-3 py-2 font-normal outline-none focus:border-brand"
+        />
+        <small className="text-right font-normal text-muted">{review.length}/280</small>
+      </label>
+      <Button size="lg" block onClick={() => rate(trip.id, stars, tags, review)}>
         Submit rating
       </Button>
       <button type="button" onClick={() => rate(trip.id, 0, [])} className="justify-self-center text-[0.86rem] font-bold text-muted">
@@ -232,6 +250,7 @@ function Receipt({ trip }: { trip: Trip }) {
           ["Paid by", capitalise(trip.payMethod)],
           ["Driver", `${trip.driver.short} · ${trip.driver.vehicle.plate}`],
           ["Your rating", trip.rating ? "★".repeat(trip.rating) : "Not rated"],
+          ...(trip.review ? [["Your review", `“${trip.review}”`]] : []),
         ].map(([k, v]) => (
           <div key={k} className="flex justify-between gap-4 px-3.5 py-2.5">
             <dt className="text-[0.88rem] text-muted">{k}</dt>

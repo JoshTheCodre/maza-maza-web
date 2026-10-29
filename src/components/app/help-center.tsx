@@ -11,6 +11,10 @@ const FAQ: Record<Side, [string, string][]> = {
   customer: [
     ["Who decides the fare?", "You and the driver. You make an offer, drivers nearby accept it or counter, and you choose. We show a recommended fare as a guide, worked out from the road distance, fuel price, time in traffic and the hour, but you can offer any price."],
     ["What's a next-job price?", "A dispatch rider who's a few minutes from finishing another delivery nearby can take yours next. You wait a little longer and pay 10% less than the price you agreed."],
+    ["How do airport rides work?", "Tap Airport on the home screen and enter your flight time. For a flight you're catching, we work back from take-off: an hour before for domestic (three for international), plus the drive in that hour's traffic, so you know exactly when you'll be picked up. You can book now or ahead, and we'll remind you the day before and an hour before."],
+    ["Can I book a ride for later?", "Yes. Choose Schedule on the booking screen and pick a time up to a week ahead. A driver accepts in advance, and you'll get reminders and an alert when they're 2 minutes away."],
+    ["What are Economy, Comfort, SUV and Group?", "Car classes. Economy is everyday saloons, Comfort newer cars with more room, SUV has space for luggage, and Group is minivans and buses for 7 to 14 people. Each shows its own recommended fare."],
+    ["Can family follow where I am?", "Yes. In Account → Safety, tap Share my live location and send the link. They see you on a map, updating as you move, for 1, 8 or 24 hours or until you stop."],
     ["Can the receiver track my package?", "Yes. On the delivery screen, tap Send to receiver. They get a link showing where the rider is and when it arrives, and a group chat with you and the rider."],
     ["What if nobody accepts my offer?", "You'll usually get counter-offers. Accept one, or raise your offer so drivers who passed see the new price."],
     ["How do I pay?", "Pay the driver directly at the end of the trip, in cash or by bank transfer to the account shown in the app. Maza-Maza takes nothing from the fare."],
@@ -21,6 +25,7 @@ const FAQ: Record<Side, [string, string][]> = {
   driver: [
     ["How does the day ticket work?", "Buy it on any day you want to work. It makes you visible to customers until 23:59 that night. No ticket means you're offline and pay nothing."],
     ["Do you take commission?", "No. You keep the full fare of every trip. The day ticket is the only fee."],
+    ["How do scheduled jobs work?", "Some customers book ahead, often for the airport. Accept or counter like any offer. The job shows under Scheduled jobs; we remind you an hour before and when it's time to leave, then tap Start driving to pickup. You need a day ticket for that day."],
     ["What's a next job?", "When you're a few minutes from dropping off a package, customers near you can book you for your next delivery. They pay 10% less, and you go straight to the next pickup instead of waiting."],
     ["How do customers pay me?", "Directly, in cash or by transfer to the bank account in Account → Bank account. Confirm the payment before you end the trip."],
     ["A customer didn't show up", "Wait at the pickup. After 5 minutes you can cancel with No-show from the trip screen."],

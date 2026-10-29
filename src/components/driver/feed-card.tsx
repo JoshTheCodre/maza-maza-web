@@ -1,12 +1,13 @@
 "use client";
 
+import { CalendarClock, Plane } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Chip, NairaStepper } from "@/components/ui/controls";
 import { Avatar, Pill, RouteDots, Stars } from "@/components/ui/display";
 import { useQuote } from "@/hooks/use-quote";
 import { place } from "@/lib/data/places";
-import { firstName, naira } from "@/lib/format";
+import { clock, dayLabel, firstName, naira } from "@/lib/format";
 import { fareSettings, minutesAway, nextJobPrice } from "@/lib/pricing";
 import { myBidFor, useStore } from "@/lib/store";
 import type { RideRequest } from "@/lib/types";
@@ -51,6 +52,13 @@ export function FeedCard({ req, now, nextJob }: { req: RideRequest; now: number;
         </div>
       </div>
       <RouteDots from={a.name} to={b.name} meta={[q ? `${q.trip.km} km · ${q.trip.minutes} min trip` : "", req.parcel, ...req.notes].filter(Boolean).join(" · ")} />
+      {req.scheduledFor && (
+        <p className="flex items-center gap-2 rounded-xl bg-danfo-soft px-3 py-2 text-[0.8rem] font-semibold">
+          {req.flight ? <Plane size={16} aria-hidden /> : <CalendarClock size={16} aria-hidden />}
+          Scheduled: {dayLabel(req.scheduledFor)}, {clock(req.scheduledFor)}
+          {req.flight ? ` · flight ${req.flight.number ?? ""} ${req.flight.kind === "departure" ? "departs" : "lands"} ${clock(req.flight.time)}` : ""}
+        </p>
+      )}
       {nextJob && !bid && req.status === "open" && (
         <p className="rounded-xl bg-danfo-soft px-3 py-2 text-[0.8rem]">
           <b>Next job.</b> You&apos;re about {nextJob.freeInMin} min from your drop-off, so {name} pays {fare.nextJobPct}% less: you&apos;d get {naira(youGet(req.offer))}.

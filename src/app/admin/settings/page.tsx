@@ -5,6 +5,7 @@ import { AdminPage } from "@/components/admin/admin-shell";
 import { Button } from "@/components/ui/button";
 import { useNow } from "@/hooks/use-now";
 import { CITY } from "@/lib/city";
+import { RIDE_CLASSES } from "@/lib/ride-classes";
 import { DEFAULT_SETTINGS } from "@/lib/config";
 import { place } from "@/lib/data/places";
 import { naira } from "@/lib/format";
@@ -35,7 +36,7 @@ const GENERAL: (FieldSpec & { key: GeneralKey })[] = [
   { key: "requestTtlMin", label: "Request stays open for", hint: "Minutes before an unanswered request expires.", unit: "min", min: 1, max: 30 },
 ];
 
-type FareKey = Exclude<keyof FareSettings, "car" | "bike">;
+type FareKey = Exclude<keyof FareSettings, "car" | "bike" | "classPct">;
 const FARE: (FieldSpec & { key: FareKey })[] = [
   { key: "fuelPrice", label: "Petrol pump price", hint: `Update when the ${CITY.name} pump price moves. Depots sold at about ₦1,350 in mid-October 2026; stations charge more.`, unit: "perl", min: 200, max: 5000 },
   { key: "rushPct", label: "Rush hour extra", hint: "Weekdays 6:30–10am and 4–8:30pm, on top of the longer trip time.", unit: "pct", min: 0, max: 100 },
@@ -52,6 +53,9 @@ const VEHICLE: (FieldSpec & { key: keyof VehicleRates })[] = [
   { key: "perMinute", label: "Driver's time", hint: "Per minute of the trip, so slow traffic pays fairly.", unit: "permin", min: 0, max: 500 },
   { key: "minFare", label: "Minimum fare", hint: "No recommended fare goes below this.", unit: "naira", min: 0, max: 20000 },
 ];
+
+const CLASS_FIELDS = ["comfort", "suv", "group"] as const;
+const CLASS_SPEC: FieldSpec = { label: "", hint: "", unit: "pct", min: 0, max: 300 };
 
 const ok = (v: number, f: FieldSpec) => Number.isFinite(v) && v >= f.min && v <= f.max;
 
@@ -96,7 +100,8 @@ export default function SettingsAdmin() {
   const valid =
     GENERAL.every((f) => ok(draft[f.key], f)) &&
     FARE.every((f) => ok(fare[f.key], f)) &&
-    (["car", "bike"] as const).every((v) => VEHICLE.every((f) => ok(fare[v][f.key], f)));
+    (["car", "bike"] as const).every((v) => VEHICLE.every((f) => ok(fare[v][f.key], f))) &&
+    CLASS_FIELDS.every((c) => ok(fare.classPct[c], CLASS_SPEC));
   const changed = JSON.stringify({ ...draft, fare }) !== JSON.stringify({ ...s.settings, fare: saved });
   const setFare = (patch: Partial<FareSettings>) => setDraft({ ...draft, fare: { ...fare, ...patch } });
 
@@ -154,6 +159,18 @@ export default function SettingsAdmin() {
               ))}
             </fieldset>
           ))}
+          <fieldset className="grid gap-3">
+            <legend className="mb-2 font-bold">Car classes</legend>
+            {CLASS_FIELDS.map((c) => (
+              <NumberField
+                key={c}
+                id={`class-${c}`}
+                spec={{ ...CLASS_SPEC, label: `${RIDE_CLASSES[c].label} costs more than Economy by`, hint: `${RIDE_CLASSES[c].seats}. ${RIDE_CLASSES[c].blurb}.` }}
+                value={fare.classPct[c]}
+                onChange={(v) => setFare({ classPct: { ...fare.classPct, [c]: v } })}
+              />
+            ))}
+          </fieldset>
           <fieldset className="grid gap-3">
             <legend className="mb-2 font-bold">Extras</legend>
             {FARE.slice(1).map((f) => (

@@ -11,7 +11,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { CITY } from "@/lib/city";
 import { naira } from "@/lib/format";
 import { useStore } from "@/lib/store";
-import type { VehicleType } from "@/lib/types";
+import { RIDE_CLASS_ORDER, RIDE_CLASSES } from "@/lib/ride-classes";
+import type { RideClass, VehicleType } from "@/lib/types";
 
 const STEPS = ["Vehicle", "About you", "Your vehicle", "Documents", "Guarantor", "Review"];
 const DOCS = [
@@ -34,6 +35,7 @@ export default function DriverSignup() {
   const TICKET_PRICE = { car: settings.ticketCar, bike: settings.ticketBike };
   const [step, setStep] = useState(0);
   const [type, setType] = useState<VehicleType>("car");
+  const [rideClass, setRideClass] = useState<RideClass>("economy");
   const [f, setF] = useState({ name: accountName, phone: accountPhone, nin: "", licence: "", vehicle: "", plate: "", gName: "", gPhone: "", gRel: "" });
   const [files, setFiles] = useState<Record<string, string>>({});
   const [agree, setAgree] = useState(false);
@@ -58,6 +60,7 @@ export default function DriverSignup() {
       phone: f.phone.trim(),
       city: CITY.name,
       vehicleType: type,
+      rideClass: type === "car" ? rideClass : undefined,
       vehicle: f.vehicle.trim(),
       plate: f.plate.trim().toUpperCase(),
       guarantor: { name: f.gName.trim(), phone: f.gPhone.trim(), relationship: f.gRel.trim() },
@@ -96,7 +99,7 @@ export default function DriverSignup() {
             <p className="text-muted">Choose how you&apos;ll work. You buy a day ticket only on the days you go out, and keep every fare.</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {([
-                ["car", Car, "Car driver", "Rides for up to 4 people"],
+                ["car", Car, "Car driver", "Rides in Economy, Comfort, SUV or Group"],
                 ["bike", Bike, "Dispatch rider", "Parcels, food and documents. No passengers."],
               ] as const).map(([v, Icon, label, sub]) => (
                 <button
@@ -115,6 +118,29 @@ export default function DriverSignup() {
                 </button>
               ))}
             </div>
+            {type === "car" && (
+              <div className="grid gap-2">
+                <p className="text-[0.85rem] font-bold">Your car&apos;s class</p>
+                <div role="radiogroup" aria-label="Car class" className="grid grid-cols-2 gap-2">
+                  {RIDE_CLASS_ORDER.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      role="radio"
+                      aria-checked={rideClass === c}
+                      onClick={() => setRideClass(c)}
+                      className={`grid gap-0.5 rounded-xl border-2 p-3 text-left ${rideClass === c ? "border-brand bg-brand-soft" : "border-line bg-surface hover:border-ink"}`}
+                    >
+                      <b>{RIDE_CLASSES[c].label}</b>
+                      <small className="text-[0.76rem] text-muted">
+                        {RIDE_CLASSES[c].seats}. {RIDE_CLASSES[c].blurb}.
+                      </small>
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[0.78rem] text-muted">You&apos;ll get requests from customers who choose this class. We check it against your vehicle papers.</p>
+              </div>
+            )}
             <div className="grid gap-1.5">
               <label htmlFor="city" className="text-[0.85rem] font-bold">
                 City
